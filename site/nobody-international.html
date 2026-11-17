@@ -1,0 +1,291 @@
+<title>Nobody International</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono&family=Newsreader:ital@1&display=swap">
+<style>
+/* Layout: black leader and white titles. One enormous word, a subtitle track
+   under it, then a narrow label column beside a wide reading column. The sign-up
+   is a letter, because this whole thing began with one. */
+:root {
+  --paper: #ffffff;
+  --ink: #0b0b0a;
+  --mute: #6f6f6a;
+  --rule: #d9d9d4;
+  --field: #f3f3f0;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --voice: "Newsreader", Georgia, "Times New Roman", serif;
+  --code: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --gap: clamp(4rem, 11vw, 9rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #060606; --ink: #f5f5f1; --mute: #8f8f89; --rule: #2b2b28; --field: #151514; color-scheme: dark }
+}
+:root[data-theme="dark"] { --paper: #060606; --ink: #f5f5f1; --mute: #8f8f89; --rule: #2b2b28; --field: #151514; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.6 var(--display); -webkit-font-smoothing: antialiased }
+.wrap { max-width: 82rem; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)) }
+a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 1px }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px }
+p, h1, h2, h3, ol, ul, dl, dd, figure { margin: 0 }
+ol, ul { padding: 0; list-style: none }
+
+.label { font: 400 .75rem/1.4 var(--code); letter-spacing: .08em; text-transform: uppercase; color: var(--mute) }
+
+/* header */
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-block: 1.25rem }
+.top a { text-decoration: none }
+.top .name { font-weight: 700; letter-spacing: -.01em }
+.tc { font: 400 .75rem/1 var(--code); letter-spacing: .08em; color: var(--mute); font-variant-numeric: tabular-nums }
+
+/* hero */
+.hero { padding-block: clamp(2rem, 6vw, 5rem) var(--gap) }
+.hero h1 { font: 900 clamp(3.5rem, 17.6vw, 15.5rem)/.8 var(--display); font-stretch: 112%; letter-spacing: -.045em; text-transform: uppercase; margin-left: -.04em }
+.hero h1 span { display: block; font: italic 400 clamp(1.75rem, 6.2vw, 5.25rem)/1 var(--voice); letter-spacing: -.02em; text-transform: none; margin: .18em 0 0 .06em }
+.sub { display: flex; align-items: baseline; gap: .9rem; margin-top: clamp(1.5rem, 4vw, 3rem); min-height: 2.2rem }
+.sub b { font: 400 1.5rem/1.3 system-ui, sans-serif }
+.lede { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 1.5rem; margin-top: clamp(2.5rem, 7vw, 6rem) }
+.lede p { grid-column: 4 / -1; font: 500 clamp(1.5rem, 3.4vw, 2.75rem)/1.14 var(--display); letter-spacing: -.025em; max-width: 22em; text-wrap: balance }
+.lede .go { grid-column: 4 / -1; margin-top: 2rem; font-weight: 600 }
+
+/* sections */
+section { border-top: 1px solid var(--rule); padding-block: var(--gap) }
+.row { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 1.5rem; row-gap: 1.5rem }
+.row > .label { grid-column: 1 / 4; padding-top: .45rem }
+.row > .body { grid-column: 4 / -1; min-width: 0 }
+h2 { font: 600 clamp(1.75rem, 4.2vw, 3.25rem)/1.06 var(--display); letter-spacing: -.03em; max-width: 18em; text-wrap: balance }
+.body > * + * { margin-top: 1.5rem }
+.body p { max-width: 38em }
+.voice { font: italic 400 clamp(1.35rem, 2.4vw, 1.75rem)/1.3 var(--voice); max-width: 26em }
+
+/* timeline: a real sequence, dated */
+.dates { margin-top: 3rem !important; border-top: 1px solid var(--ink) }
+.dates li { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1rem; padding-block: .85rem; border-bottom: 1px solid var(--rule) }
+.dates time { font: 400 .8125rem/1.9 var(--code); color: var(--mute); font-variant-numeric: tabular-nums }
+
+/* what you get */
+.gives { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3rem 2.5rem; margin-top: 3.5rem !important }
+.gives h3 { font: 800 clamp(2rem, 4vw, 3rem)/1 var(--display); font-stretch: 112%; letter-spacing: -.04em; text-transform: uppercase; margin-bottom: .9rem }
+.gives p { max-width: 26em }
+
+/* who */
+.signs { margin-top: 2.5rem !important; border-top: 1px solid var(--ink) }
+.signs li { font: 500 clamp(1.2rem, 2.3vw, 1.65rem)/1.25 var(--display); letter-spacing: -.02em; padding-block: 1.1rem; border-bottom: 1px solid var(--rule); max-width: none }
+.signs li small { display: block; font: 400 1rem/1.5 var(--display); letter-spacing: 0; color: var(--mute); margin-top: .3rem }
+
+/* films */
+.films { margin-top: 2.5rem !important; border-top: 1px solid var(--ink) }
+.films li { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; padding-block: .85rem; border-bottom: 1px solid var(--rule) }
+.films span { font: 400 .8125rem/1.9 var(--code); color: var(--mute) }
+.films em { font: italic 400 1.2rem/1.35 var(--voice) }
+
+/* the letter */
+.letter { background: var(--ink); color: var(--paper); border-top: 0 }
+.letter .label, .letter .hint { color: color-mix(in srgb, var(--paper) 62%, var(--ink)) }
+.letter :focus-visible { outline-color: var(--paper) }
+form { margin-top: 2.5rem !important; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.75rem 2rem; max-width: 46rem }
+.f { display: grid; gap: .45rem; min-width: 0 }
+.f.wide, form .send { grid-column: 1 / -1 }
+.f label { font: 400 .75rem/1.4 var(--code); letter-spacing: .08em; text-transform: uppercase }
+.f input, .f select, .f textarea { width: 100%; font: 400 1.125rem/1.4 var(--display); color: var(--paper); background: transparent; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 45%, var(--ink)); border-radius: 0; padding: .5rem 0 }
+.f select option { color: var(--ink); background: var(--paper) }
+.f textarea { font: italic 400 1.35rem/1.45 var(--voice); min-height: 11rem; resize: vertical }
+.f input::placeholder, .f textarea::placeholder { color: color-mix(in srgb, var(--paper) 40%, var(--ink)) }
+.f input:focus, .f select:focus, .f textarea:focus { outline: 0; border-bottom-color: var(--paper); box-shadow: 0 1px 0 var(--paper) }
+.hint { font-size: .9375rem; max-width: 34em }
+.send { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem }
+button { font: 700 1rem/1 var(--display); letter-spacing: -.01em; color: var(--ink); background: var(--paper); border: 1px solid var(--paper); border-radius: 0; padding: 1.05rem 1.6rem; cursor: pointer }
+button:hover { background: transparent; color: var(--paper) }
+button:disabled { opacity: .5; cursor: default }
+#status { font-size: 1rem; max-width: 30em }
+
+footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 2rem }
+
+@media (max-width: 760px) {
+  .lede p, .lede .go, .row > .label, .row > .body { grid-column: 1 / -1 }
+  .gives, form { grid-template-columns: 1fr }
+  .dates li { grid-template-columns: 1fr; gap: 0 }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sub b { transition: opacity .25s }
+  .sub.out b { opacity: 0 }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <a class="name" href="#top">Nobody International</a>
+    <span class="tc" id="tc" aria-hidden="true">00:00:00:00</span>
+    <a href="#write">Write to us</a>
+  </header>
+
+  <div class="hero" id="top">
+    <h1>Nobody <span>International</span></h1>
+    <div class="sub" id="sub" aria-hidden="true"><b lang="ru" id="word">Никто</b></div>
+    <div class="lede">
+      <p>The next great documentary is being lived right now by someone who wants to tell it. We find them, put Oscar-winning filmmakers and a community behind them, and help them tell it themselves.</p>
+      <a class="go" href="#write">Write to us ↓</a>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap row">
+    <p class="label">Where this comes from</p>
+    <div class="body">
+      <h2>It started with an angry letter from a school in the Urals.</h2>
+      <p>Pavel Talankin ran school events and filmed the assemblies at a primary school in Karabash, a copper-smelting town in Russia. After the invasion of Ukraine his job changed. He was told to film children reciting support for the war and send the footage up the chain as proof.</p>
+      <p>He planned to resign. Then he answered a call for stories with a long, furious letter. It was forwarded from one person to the next until it reached David Borenstein, a filmmaker in Copenhagen. Pavel withdrew his resignation and kept the camera running for two years.</p>
+      <ol class="dates">
+        <li><time>2022</time><span>War lessons arrive at Karabash School No. 1. Pavel starts keeping what he films.</span></li>
+        <li><time>June 2024</time><span>He leaves Russia carrying the footage.</span></li>
+        <li><time>January 2025</time><span><i>Mr. Nobody Against Putin</i> premieres at Sundance and wins a Special Jury Award.</span></li>
+        <li><time>February 2026</time><span>BAFTA for Best Documentary.</span></li>
+        <li><time>15 March 2026</time><span>Academy Award for Best Documentary Feature.</span></li>
+      </ol>
+      <p class="voice">Nobody went looking for Pavel. His letter happened to reach the right person. We exist so the next one doesn't depend on luck.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap row">
+    <p class="label">Who we are looking for</p>
+    <div class="body">
+      <h2>You may be a nobody.</h2>
+      <ul class="signs">
+        <li>You are inside a place cameras don't go.<small>A school, a hospital ward, a mine, a port, a barracks, a town hall.</small></li>
+        <li>Something around you has changed and you can't stop noticing.<small>It is still happening.</small></li>
+        <li>You want to tell it yourself.<small>That matters more than anything else on this list.</small></li>
+        <li>You may already hold a camera. You may not.<small>Pavel filmed school assemblies for a living. Some experience helps, none is required, and you need no equipment and no English.</small></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap row">
+    <p class="label">What you get</p>
+    <div class="body">
+      <h2>You bring the story. We bring the people who know how to tell one.</h2>
+      <div class="gives">
+        <div><h3>Mentors</h3><p>Oscar-winning directors, cinematographers, editors and producers, working with you one to one. They teach what they know: how to shoot, how to find the film inside the footage, how to protect it and yourself.</p></div>
+        <div><h3>A team</h3><p>When your story is ready, experienced people join you: an editor, a producer, a co-director if you want one. It stays your story. Pavel is credited as co-director of his film, and he holds the Oscar for it.</p></div>
+        <div><h3>An audience</h3><p>Introductions to the funds, broadcasters and festivals that carried one school videographer's footage from Karabash to the Academy Awards.</p></div>
+        <div><h3>Your terms</h3><p>Write, speak and film in the language you think in; translation is our job. You decide what is shared, with whom, and when. We publish no name without consent.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap row">
+    <p class="label">The community</p>
+    <div class="body">
+      <h2>You stop being the only one.</h2>
+      <p>Most people with a story like this carry it alone. Here you meet others doing the same thing somewhere else: a teacher in one country, a nurse in another, a dock worker in a third. They understand without explanation. They watch your footage and tell you what they see. They notice if you go quiet.</p>
+      <p>Together you are also harder to ignore. One story from one town can be waved away. A hundred of them, in many languages, are a record.</p>
+      <p class="voice">A nobody is more powerful than you think. A few hundred of them, more so.</p>
+      <p>Filmmakers, funders, festivals and translators: there is a place for you too. Say so in your letter.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap row">
+    <p class="label">David Borenstein</p>
+    <div class="body">
+      <h2>Founded by the director of <i>Mr. Nobody Against Putin</i>.</h2>
+      <p>David Borenstein is an American documentary filmmaker who lives and works in Copenhagen. He began in radio, then spent years in China, where he made his first feature, <i>Dream Empire</i>.</p>
+      <p>He directed <i>Mr. Nobody Against Putin</i> with Pavel Talankin as co-director. In March 2026 it won the Academy Award for Best Documentary Feature, the first Oscar for both of them. Accepting it, David said that even a nobody is more powerful than you think.</p>
+      <ul class="films">
+        <li><span>2016</span><em>Dream Empire</em></li>
+        <li><span>2024</span><em>Can't Feel Nothing</em></li>
+        <li><span>2025</span><em>Mr. Nobody Against Putin</em></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="letter" id="write">
+  <div class="wrap row">
+    <p class="label">Write to us</p>
+    <div class="body">
+      <h2>Send a letter. Any length, any language.</h2>
+      <p class="hint">Tell us where you are and what you see. If you are not the nobody but know one, or want to help, tell us that. Write only what is safe for you to write here.</p>
+      <form id="form" novalidate>
+        <p hidden><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
+        <div class="f"><label for="name">Name, or a name you choose</label><input id="name" name="name" autocomplete="name" required></div>
+        <div class="f"><label for="location">Where you are</label><input id="location" name="location" placeholder="Town, country" required></div>
+        <div class="f"><label for="contact">How to reach you</label><input id="contact" name="contact" placeholder="Email or handle" autocomplete="email" required></div>
+        <div class="f"><label for="role">I am</label>
+          <select id="role" name="role">
+            <option>Someone with a story</option>
+            <option>Someone who knows a nobody</option>
+            <option>A filmmaker who wants to help</option>
+            <option>A funder, festival or partner</option>
+          </select></div>
+        <div class="f wide"><label for="letter">Your letter</label><textarea id="letter" name="letter" placeholder="Dear Nobody International," required></textarea></div>
+        <div class="send"><button type="submit" id="send">Send the letter</button><p id="status" role="status" aria-live="polite"></p></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <footer class="label"><span>Nobody International, 2026</span><span>Copenhagen and everywhere else</span></footer>
+</div>
+
+<script>
+// Where letters go: the function in api/letters.js, which stores them privately.
+const ENDPOINT = "/api/letters";
+
+// "Nobody", in other languages.
+const WORDS = [["Никто","ru"],["Nadie","es"],["لا أحد","ar"],["Ninguém","pt"],["无名之辈","zh"],["Personne","fr"],["कोई नहीं","hi"],["Hakuna mtu","sw"],["Ніхто","uk"],["Hiç kimse","tr"],["هیچ‌کس","fa"],["Niemand","de"],["কেউ না","bn"],["誰でもない","ja"],["Nikt","pl"],["Walang sinuman","tl"],["Ingen","da"]];
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!still) {
+  const sub = document.getElementById("sub"), word = document.getElementById("word");
+  let i = 0;
+  setInterval(() => {
+    sub.classList.add("out");
+    setTimeout(() => { i = (i + 1) % WORDS.length; word.textContent = WORDS[i][0]; word.lang = WORDS[i][1]; sub.classList.remove("out"); }, 260);
+  }, 2000);
+  // Running timecode at 25 frames a second, the European rate the film was cut at.
+  const tc = document.getElementById("tc"), t0 = performance.now(), p = n => String(n).padStart(2, "0");
+  setInterval(() => { const f = Math.floor((performance.now() - t0) / 40); tc.textContent = [Math.floor(f / 90000), Math.floor(f / 1500) % 60, Math.floor(f / 25) % 60, f % 25].map(p).join(":"); }, 40);
+}
+
+// The letter.
+const form = document.getElementById("form"), status = document.getElementById("status"), send = document.getElementById("send");
+const KEY = "nobody-letter-draft", FIELDS = ["name", "location", "contact", "role", "letter"];
+const read = () => Object.fromEntries(FIELDS.map(k => [k, form.elements[k].value.trim()]));
+try { const d = JSON.parse(localStorage.getItem(KEY) || "{}"); FIELDS.forEach(k => { if (d[k]) form.elements[k].value = d[k]; }); } catch (e) {}
+form.addEventListener("input", () => { try { localStorage.setItem(KEY, JSON.stringify(read())); } catch (e) {} });
+
+async function deliver(letter) {
+  if (window.claude && window.claude.use) {            // preview on claude.ai
+    const db = await window.claude.use("db"), user = await window.claude.use("user");
+    const id = user ? await user.id() : null;
+    if (!db || !id) throw new Error("unavailable");
+    return db.doc("letters/" + id).set(letter);
+  }
+  const r = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(letter) });
+  if (!r.ok) throw new Error("refused " + r.status);
+}
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (form.elements.company.value) return;              // a bot filled the hidden field
+  const letter = read();
+  const missing = ["name", "location", "contact", "letter"].find(k => !letter[k]);
+  if (missing) { status.textContent = "Please fill in every line, then send again."; form.elements[missing].focus(); return; }
+  send.disabled = true; status.textContent = "Sending…";
+  try {
+    await deliver(letter);
+    form.reset(); status.textContent = "Received. A person will read it.";
+    try { localStorage.removeItem(KEY); } catch (e) {}
+  } catch (err) {
+    status.textContent = "Your letter could not be sent, so nothing has left this page. It is kept in this browser. Please try again in a moment.";
+  }
+  send.disabled = false;
+});
+</script>
