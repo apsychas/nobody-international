@@ -77,6 +77,10 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 #log { margin-top: 1.25rem; font: 400 .85rem/1.7 var(--code); white-space: pre-wrap; border-top: 1px solid var(--rule); padding-top: 1rem }
 .intro { padding: 1.5rem 0; border-top: 1px solid var(--rule); max-width: 46em }
 .intro h3 { font: 600 1.25rem/1.25 var(--display); letter-spacing: -.02em; margin-bottom: .4rem }
+.qcard { padding: 1.5rem 0; border-top: 1px solid var(--rule); max-width: 50em; display: grid; gap: .5rem }
+.qcard h3 { font: 600 1.35rem/1.25 var(--display); letter-spacing: -.02em }
+.qcard code { font: 400 .9rem/1.5 var(--code); overflow-wrap: anywhere; user-select: all }
+.qcard ul { padding-left: 1.1rem; list-style: disc; font-size: .93rem; color: var(--mute) }
 .intro .q { font: italic 400 1.15rem/1.4 var(--voice); margin-top: .6rem }
 @media (max-width: 560px) { .lead { grid-template-columns: 1fr; gap: .5rem } }
 </style>
@@ -101,6 +105,7 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
       <button role="tab" data-tab="search" aria-selected="false">Search</button>
       <button role="tab" data-tab="letters" aria-selected="false">Letters</button>
       <button role="tab" data-tab="intros" aria-selected="false">Introductions</button>
+      <button role="tab" data-tab="questions" aria-selected="false">Questions</button>
       <button id="lock">Lock</button>
     </nav>
   </header>
@@ -156,6 +161,21 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     </div>
     <div id="introList"></div>
   </section>
+
+  <section id="questions" hidden>
+    <h2>Open questions</h2>
+    <p class="note">Pavel was not found by a search. He saw a question and answered it. Draft a question for one kind of work in one country, post it where those people gather, and send them to its reply link. Answers arrive under Letters. The reply page says who is asking; nothing is posted for you.</p>
+    <form class="bar" id="qForm">
+      <input type="text" id="qCountry" placeholder="Country" maxlength="60" required>
+      <input type="text" id="qLang" placeholder="Language" maxlength="60" required>
+      <input type="text" id="qJob" placeholder="Kind of work, e.g. school staff" maxlength="80" required>
+      <button class="act" type="submit" id="qDraft">Draft questions</button>
+    </form>
+    <p class="msg" id="qMsg" role="status"></p>
+    <div id="qDrafts"></div>
+    <h2 style="margin-top:2.5rem">Your questions</h2>
+    <div id="qList"></div>
+  </section>
 </div>
 
 </div>
@@ -188,7 +208,8 @@ $("gate").addEventListener("submit", e => { e.preventDefault(); key = $("pw").va
 $("lock").addEventListener("click", () => { key = ""; try { sessionStorage.removeItem("scout-key"); } catch (e) {} location.reload(); });
 document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => {
   document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
-  ["queue", "search", "letters", "intros"].forEach(t => $(t).hidden = t !== b.dataset.tab);
+  ["queue", "search", "letters", "intros", "questions"].forEach(t => $(t).hidden = t !== b.dataset.tab);
+  if (b.dataset.tab === "questions") loadQuestions();
 }));
 
 // ---- queue
@@ -235,6 +256,7 @@ function card(l) {
   if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
   if (l.cautions) b.append(el("p", "check", "Check first: " + l.cautions));
   if (l.kind === "person" && l.scores) { const t = el("div", "traits"); Object.entries(l.scores).forEach(([k, v]) => t.append(el("span", "", k + " " + v))); b.append(t); }
+  if (l.answered) b.append(el("p", "who", "Answered: “" + l.answered + "”" + (l.answered_at ? " (placed: " + l.answered_at + ")" : "")));
   if (l.contact) b.append(el("p", "who", "Reach them: " + l.contact));
   if (l.letter) { const d = el("details"); d.append(el("summary", "", "Their letter"), el("pre", "", l.letter)); b.append(d); }
   const links = (l.sources || []).filter(u => /^https?:\/\//i.test(u));
@@ -342,6 +364,45 @@ $("propose").addEventListener("click", async () => {
   const b = $("propose"), m = $("introMsg"); b.disabled = true; m.textContent = "Thinking…";
   try { const out = await api("match", { min: Number($("min").value) || 0 }); m.textContent = out.people < 2 ? "Not enough people at that score yet (" + out.people + ")." : out.added + " new."; await refresh(); }
   catch (err) { m.textContent = err.message; }
+  b.disabled = false;
+});
+
+// ---- open questions
+let qDraft = null;
+const qLink = code => location.origin + "/q?c=" + code;
+async function loadQuestions() {
+  const box = $("qList");
+  try {
+    const { questions } = await api("questions"); box.textContent = "";
+    if (!questions.length) { box.append(el("p", "empty", "No questions yet. Draft one above, choose where to place it, and its reply link will appear here.")); return; }
+    questions.forEach(q => {
+      const c = el("article", "qcard"); if (q.rtl) c.dir = "auto";
+      c.append(el("h3", "", q.text), el("p", "", q.english), el("p", "who", [q.job, q.country, q.language, "placed: " + q.placement, q.active ? "open" : "closed"].join(" · ")));
+      const link = el("code", "", qLink(q.code)); c.append(link);
+      const acts = el("div", "acts"), copy = el("button", "quiet", "Copy link"), tog = el("button", "quiet", q.active ? "Close question" : "Reopen");
+      copy.addEventListener("click", async () => { try { await navigator.clipboard.writeText(qLink(q.code)); copy.textContent = "Copied"; } catch (e) { copy.textContent = "Select the link above"; } });
+      tog.addEventListener("click", async () => { tog.disabled = true; try { await api("setQuestion", { code: q.code, active: !q.active }); loadQuestions(); } catch (err) { tog.disabled = false; tog.textContent = err.message; } });
+      acts.append(copy, tog, el("span", "label", q.replies + (q.replies === 1 ? " reply" : " replies"))); c.append(acts); box.append(c);
+    });
+  } catch (err) { box.textContent = err.message; }
+}
+$("qForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const b = $("qDraft"), m = $("qMsg"), box = $("qDrafts"); b.disabled = true; m.textContent = "Writing…"; box.textContent = "";
+  try {
+    qDraft = await api("draft", { country: $("qCountry").value, language: $("qLang").value, job: $("qJob").value }); m.textContent = "Pick one, say where you will place it, and create its link. Have a native speaker check the wording first.";
+    qDraft.questions.forEach(q => {
+      const c = el("article", "qcard"); c.append(el("h3", "", q.text), el("p", "", q.english), el("p", "who", q.why));
+      const ul = el("ul"); (q.placements || []).forEach(p => ul.append(el("li", "", p))); c.append(ul);
+      const row = el("div", "bar"), where = el("input"), go = el("button", "quiet", "Create link"); where.type = "text"; where.placeholder = "Where will you place it?"; where.maxLength = 200; where.value = (q.placements || [])[0] || "";
+      go.addEventListener("click", async () => {
+        if (!where.value.trim()) { where.focus(); return; } go.disabled = true;
+        try { await api("saveQuestion", { country: qDraft.country, language: qDraft.language, job: qDraft.job, text: q.text, english: q.english, placement: where.value, rtl: qDraft.rtl, ui: qDraft.ui }); go.textContent = "Link created below"; loadQuestions(); }
+        catch (err) { go.disabled = false; go.textContent = err.message; }
+      });
+      row.append(where, go); c.append(row); box.append(c);
+    });
+  } catch (err) { m.textContent = err.message; }
   b.disabled = false;
 });
 

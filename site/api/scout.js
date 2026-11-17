@@ -3,7 +3,7 @@
 // and stored in the same private Blob store as the letters.
 import Anthropic from '@anthropic-ai/sdk';
 import { put, get, list } from '@vercel/blob';
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual, randomBytes } from 'node:crypto';
 import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS, STORY_TYPES } from '../lib/brief.js';
 
 // With ANTHROPIC_API_KEY set, calls go straight to Anthropic. Without it they go
@@ -112,6 +112,38 @@ const INTROS = obj({
   },
 });
 
+const QUESTIONS = obj({
+  questions: {
+    type: 'array',
+    items: obj({
+      text: str('The question, in the requested language, as a native speaker in that job would phrase it. One sentence, under 25 words.'),
+      english: str('What the question says, in plain English'),
+      why: str('One sentence: why an insider would feel compelled to answer this'),
+      placements: { type: 'array', items: { type: 'string' }, description: '3-5 specific places to post it: kinds of forum, group, newsletter or radio slot, and any of the listed organisations that fit' },
+    }),
+  },
+  rtl: { type: 'boolean', description: 'True if the language is written right to left' },
+  ui: obj({
+    answer: str("In the requested language: 'Write your answer here. Any length.'"),
+    name: str("In the requested language: 'Your name (optional)'"),
+    contact: str("In the requested language: 'How we can reach you, if you want a reply (optional)'"),
+    safe: str("In the requested language: 'Only write what is safe for you to write.'"),
+    send: str("In the requested language: 'Send'"),
+    thanks: str("In the requested language: 'Thank you. We read every answer.'"),
+    asked_by: str("In the requested language: 'This question is asked by Nobody International, the team behind the Oscar-winning film Mr. Nobody Against Putin. We help people tell their own stories.'"),
+    who: str("In the requested language: 'Who we are'"),
+  }),
+});
+
+const QUESTION_SYSTEM = `You write open questions for Nobody International, a documentary initiative. Pavel Talankin, a school videographer in Russia, was not found by a search: he saw a question, and answered it with a long, angry letter. We want to ask questions like that one.
+
+Write three different questions for people in the job and country given. Each question:
+- is one sentence a person in that job would stop scrolling for, because only an insider could answer it;
+- is about what they themselves see, do or have been told to do, never asking them to name or expose colleagues, patients, pupils or anyone else;
+- does not mention films, prizes or money, and promises nothing;
+- is written the way people in that job actually talk in that language, not translated from English.
+Make the three differ in angle: one about what has changed, one about what they record or keep, one about what nobody outside would believe.`;
+
 const RUBRIC_TEXT = TRAITS.map((t) => `- ${t}: ${RUBRIC[t]}`).join('\n');
 
 const SCOUT_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people who have a story only they can tell and want to tell it, before the film world has found them.
@@ -211,7 +243,8 @@ async function intake() {
     };
     const id = hash(blob.pathname);
     await writeJson(`scout/leads/${id}.json`, finish(raw, {
-      id, kind: 'person', country: letter.location || '', language: '', lane: 'open-call', origin: 'inbound',
+      id, kind: 'person', country: letter.location || '', language: '', lane: letter.question_code ? 'question' : 'open-call', origin: 'inbound',
+      answered: letter.question_english || letter.question || '', answered_at: letter.question_placement || '',
       name: letter.name || raw.name, contact: letter.contact || '', wrote_as: letter.role || '',
       letter: letter.letter || '', received: letter.received || '',
     }));
@@ -250,7 +283,48 @@ async function mark({ id, status }) {
   return { ok: true };
 }
 
+const WORDS = /^[\p{L}\p{M}' .(),&/-]{2,80}$/u;
+const questionPath = (code) => `scout/questions/${code}.json`;
+
+async function draft(body) {
+  const country = String(body.country || '').trim(), language = String(body.language || '').trim(), job = String(body.job || '').trim();
+  if (!PLACE.test(country) || !PLACE.test(language) || !WORDS.test(job)) throw fail(400, 'Enter a country, a language and a kind of work, in letters only.');
+  const orgs = (await readAll('scout/leads/')).filter((l) => l.kind === 'intermediary' && l.country.toLowerCase() === country.toLowerCase()).map((l) => l.name).slice(0, 30);
+  const parsed = await structure(QUESTION_SYSTEM,
+    `Country: ${country}\nLanguage: ${language}\nKind of work: ${job}\nOrganisations we already know there: ${orgs.length ? orgs.join('; ') : 'none yet'}`, QUESTIONS);
+  if (!parsed?.questions?.length) throw fail(409, 'No questions came back. Try again.');
+  return { country, language, job, ...parsed };
+}
+
+async function saveQuestion(body) {
+  const country = String(body.country || '').trim(), language = String(body.language || '').trim(), job = String(body.job || '').trim();
+  const text = String(body.text || '').trim().slice(0, 400), placement = String(body.placement || '').trim().slice(0, 200);
+  if (!PLACE.test(country) || !PLACE.test(language) || !WORDS.test(job) || !text || !placement) throw fail(400, 'A question needs its text and where it will be placed.');
+  const ui = {};
+  for (const k of ['answer', 'name', 'contact', 'safe', 'send', 'thanks', 'asked_by', 'who']) ui[k] = String(body.ui?.[k] || '').slice(0, 400);
+  const code = [...randomBytes(6)].map((b) => 'abcdefghijklmnopqrstuvwxyz234567'[b % 32]).join('');
+  const q = { code, country, language, job, text, english: String(body.english || '').slice(0, 400), placement, rtl: Boolean(body.rtl), ui, active: true, created: new Date().toISOString().slice(0, 10) };
+  await writeJson(questionPath(code), q);
+  return q;
+}
+
+async function setQuestion({ code, active }) {
+  if (!/^[a-z2-7]{6}$/.test(code || '')) throw fail(400, 'Bad request.');
+  const q = await readJson(questionPath(code));
+  if (!q) throw fail(404, 'No such question.');
+  await writeJson(questionPath(code), { ...q, active: Boolean(active) });
+  return { ok: true };
+}
+
+async function questions() {
+  const [list, letters] = await Promise.all([readAll('scout/questions/'), listAll('letters/')]);
+  const counts = {};
+  for (const b of letters) { const m = b.pathname.match(/\/q-([a-z2-7]{6})-/); if (m) counts[m[1]] = (counts[m[1]] || 0) + 1; }
+  return { questions: list.map((q) => ({ ...q, replies: counts[q.code] || 0 })).sort((a, b) => (b.created || '').localeCompare(a.created || '')) };
+}
+
 const ACTIONS = {
+  questions, draft, saveQuestion, setQuestion,
   config: async () => ({
     regions: REGIONS.map(([country, languages]) => ({ country, languages })),
     highRisk: [...HIGH_RISK],
@@ -286,7 +360,7 @@ export default async function handler(req, res) {
   const action = ACTIONS[body.action];
   if (!action) return res.status(400).json({ error: 'Unknown action.' });
   gatewayToken = req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '';
-  if (['run', 'intake', 'match'].includes(body.action) && !direct() && !gatewayToken) {
+  if (['run', 'intake', 'match', 'draft'].includes(body.action) && !direct() && !gatewayToken) {
     return res.status(503).json({ error: 'No AI access: add ANTHROPIC_API_KEY in the Vercel project settings, then redeploy.' });
   }
   try {

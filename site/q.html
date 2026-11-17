@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>A question</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono&display=swap">
+<style>
+:root { --paper: #ffffff; --ink: #0b0b0a; --mute: #6f6f6a; --rule: #d9d9d4; --field: #f3f3f0; --display: "Archivo", "Helvetica Neue", Arial, system-ui, sans-serif; --code: "IBM Plex Mono", ui-monospace, Menlo, monospace }
+@media (prefers-color-scheme: dark) { :root { --paper: #060606; --ink: #f5f5f1; --mute: #8f8f89; --rule: #2b2b28; --field: #151514; color-scheme: dark } }
+* { box-sizing: border-box } [hidden] { display: none !important }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.55 var(--display); -webkit-font-smoothing: antialiased }
+main { max-width: 44rem; margin: 0 auto; padding: clamp(2.5rem, 9vh, 6rem) 20px 4rem; display: grid; gap: 1.5rem }
+h1 { margin: 0; font: 700 clamp(1.9rem, 6vw, 3.25rem)/1.1 var(--display); letter-spacing: -.03em; text-wrap: balance }
+label { display: grid; gap: .4rem; font-size: .93rem; color: var(--mute) }
+textarea, input { width: 100%; font: 400 1.1rem/1.5 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .8rem .9rem }
+textarea { min-height: 14rem; resize: vertical }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem } @media (max-width: 560px) { .two { grid-template-columns: 1fr } }
+button { justify-self: start; font: 700 1rem/1 var(--display); color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 0; padding: 1rem 1.6rem; cursor: pointer }
+button:hover { background: var(--paper); color: var(--ink) } button:disabled { opacity: .5 }
+.small { font-size: .93rem; color: var(--mute) } .by { border-top: 1px solid var(--rule); padding-top: 1.25rem }
+a { color: var(--ink); text-underline-offset: .2em }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="q">…</h1>
+  <form id="form" hidden novalidate>
+    <label><span id="lAnswer" class="small">Write your answer here. Any length.</span><textarea id="letter" required></textarea></label>
+    <div class="two">
+      <label><span id="lName">Your name (optional)</span><input id="name" autocomplete="name"></label>
+      <label><span id="lContact">How we can reach you, if you want a reply (optional)</span><input id="contact" autocomplete="email"></label>
+    </div>
+    <p hidden><label>Leave this empty <input id="company" tabindex="-1" autocomplete="off"></label></p>
+    <p class="small" id="lSafe">Only write what is safe for you to write.</p>
+    <button type="submit" id="send">Send</button>
+    <p id="status" role="status" aria-live="polite"></p>
+  </form>
+  <p class="small by" id="by" hidden><span id="lBy">This question is asked by Nobody International, the team behind the Oscar-winning film Mr. Nobody Against Putin. We help people tell their own stories.</span> <a href="/" id="lWho">Who we are</a></p>
+</main>
+<script>
+const $ = id => document.getElementById(id), code = new URLSearchParams(location.search).get("c") || "";
+let thanks = "Thank you. We read every answer.";
+(async () => {
+  try {
+    const r = await fetch("/api/question?c=" + encodeURIComponent(code)); const q = await r.json();
+    if (!r.ok) throw new Error(q.error);
+    $("q").textContent = q.text; document.title = q.text;
+    if (q.rtl) document.documentElement.dir = "rtl";
+    const ui = q.ui || {}, set = (id, v) => { if (v) $(id).textContent = v; };
+    set("lAnswer", ui.answer); set("lName", ui.name); set("lContact", ui.contact); set("lSafe", ui.safe); set("send", ui.send); set("lBy", ui.asked_by); set("lWho", ui.who);
+    if (ui.thanks) thanks = ui.thanks;
+    $("form").hidden = false; $("by").hidden = false;
+  } catch (e) { $("q").textContent = "This question is closed."; $("by").hidden = false; }
+})();
+$("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const letter = $("letter").value.trim(); if (!letter) { $("letter").focus(); return; }
+  $("send").disabled = true; $("status").textContent = "…";
+  try {
+    const r = await fetch("/api/question", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ c: code, letter, name: $("name").value, contact: $("contact").value, company: $("company").value }) });
+    if (!r.ok) throw new Error();
+    $("form").hidden = true; $("q").textContent = thanks;
+  } catch (err) { $("status").textContent = "Not sent. Please try again."; $("send").disabled = false; }
+});
+</script>
+</body>
+</html>
