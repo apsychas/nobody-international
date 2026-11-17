@@ -80,8 +80,13 @@ h2 { font: 600 clamp(1.75rem, 4.2vw, 3.25rem)/1.06 var(--display); letter-spacin
 .signs li { font: 500 clamp(1.2rem, 2.3vw, 1.65rem)/1.25 var(--display); letter-spacing: -.02em; padding-block: 1.1rem; border-bottom: 1px solid var(--rule); max-width: none }
 .signs li small { display: block; font: 400 1rem/1.5 var(--display); letter-spacing: 0; color: var(--mute); margin-top: .3rem }
 
+/* awards */
+.creds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem 1.5rem; margin-top: .6rem !important; padding-block: 1.25rem; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink) }
+.creds li { font: 400 .75rem/1.5 var(--code); letter-spacing: .06em; text-transform: uppercase; color: var(--mute) }
+.creds b { display: block; font: 700 1.25rem/1.3 var(--display); letter-spacing: -.01em; text-transform: none; color: var(--ink) }
+
 /* films */
-.films { margin-top: 2.5rem !important; border-top: 1px solid var(--ink) }
+.films { margin-top: 0 !important }
 .films li { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; padding-block: .85rem; border-bottom: 1px solid var(--rule) }
 .films span { font: 400 .8125rem/1.9 var(--code); color: var(--mute) }
 .films em { font: italic 400 1.2rem/1.35 var(--voice) }
@@ -110,7 +115,7 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
 
 @media (max-width: 760px) {
   .lede p, .lede .go, .row > .label, .row > .body { grid-column: 1 / -1 }
-  .gives, form { grid-template-columns: 1fr }
+  .gives, form, .creds { grid-template-columns: 1fr }
   .dates li { grid-template-columns: 1fr; gap: 0 }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -209,8 +214,13 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
     <p class="label">Who we are</p>
     <div class="body">
       <h2>Led by an Oscar-winning director.</h2>
-      <p>David Borenstein directed <i>Mr. Nobody Against Putin</i>, with Pavel Talankin as co-director. In 2026 it won the Academy Award and the BAFTA for best documentary.</p>
-      <p>David is an American filmmaker based in Copenhagen.</p>
+      <p>David Borenstein directed <i>Mr. Nobody Against Putin</i>, with Pavel Talankin as co-director. He is an American filmmaker based in Copenhagen.</p>
+      <p class="label" style="margin-top:2.5rem">Awards for Mr. Nobody Against Putin</p>
+      <ul class="creds">
+        <li><b>Academy Award</b>Best Documentary Feature, 2026</li>
+        <li><b>BAFTA</b>Best Documentary, 2026</li>
+        <li><b>Sundance</b>Special Jury Award, 2025</li>
+      </ul>
       <ul class="films">
         <li><span>2016</span><em>Dream Empire</em></li>
         <li><span>2024</span><em>Can't Feel Nothing</em></li>
