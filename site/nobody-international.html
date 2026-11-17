@@ -63,6 +63,11 @@ h2 { font: 600 clamp(1.75rem, 4.2vw, 3.25rem)/1.06 var(--display); letter-spacin
 .body p { max-width: 38em }
 .voice { font: italic 400 clamp(1.35rem, 2.4vw, 1.75rem)/1.3 var(--voice); max-width: 26em }
 
+/* Pavel's words */
+.said { margin-top: 3rem !important; padding-left: clamp(1rem, 2.5vw, 2rem); border-left: 3px solid var(--ink) }
+.said blockquote { margin: 0; font: italic 400 clamp(1.6rem, 3.4vw, 2.6rem)/1.18 var(--voice); letter-spacing: -.01em; max-width: 20em; text-wrap: balance }
+.said figcaption { margin-top: 1rem; font: 400 .75rem/1.5 var(--code); letter-spacing: .06em; text-transform: uppercase; color: var(--mute) }
+
 /* timeline: a real sequence, dated */
 .dates { margin-top: 3rem !important; border-top: 1px solid var(--ink) }
 .dates li { display: grid; grid-template-columns: 9.5rem 1fr; gap: 1rem; padding-block: .85rem; border-bottom: 1px solid var(--rule) }
@@ -146,15 +151,21 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
     <p class="label">The proof</p>
     <div class="body">
       <h2>A school videographer sent one angry letter. His film won the Oscar.</h2>
-      <p>Pavel Talankin filmed school events in Karabash, a small town in Russia. When the war in Ukraine began, he was told to film children reciting support for it.</p>
-      <p>He wrote a furious letter. It reached director David Borenstein. Pavel kept filming for two years.</p>
+      <p>Pavel Talankin ran events and filmed assemblies at Primary School No. 1 in Karabash, a small industrial town in Russia. Students came to his office to feel safe. His mother is the school librarian.</p>
+      <p>When the war in Ukraine began, his job changed. He was told to film children reciting support for the war and send the footage to the state.</p>
+      <p>He planned to resign. He wrote a furious letter instead. It reached director David Borenstein. Pavel stayed and kept filming for two years.</p>
+      <p>Then he left Russia with the footage. He is the film's co-director and he holds the Oscar for it. He now lives in exile in Europe.</p>
       <ol class="dates">
         <li><time>2022</time><span>Pavel starts keeping what he films at school.</span></li>
         <li><time>2024</time><span>He leaves Russia with the footage.</span></li>
         <li><time>2025</time><span><i>Mr. Nobody Against Putin</i> opens at Sundance and wins a Special Jury Award.</span></li>
         <li><time>2026</time><span>It wins the BAFTA and the Academy Award.</span></li>
       </ol>
-      <p class="voice">Pavel was found by luck. We exist so that you don't need luck.</p>
+      <figure class="said">
+        <blockquote>In the name of our future, in the name of all of our children, stop all of these wars now.</blockquote>
+        <figcaption>Pavel Talankin, accepting the Academy Award, March 2026. Translated from Russian.</figcaption>
+      </figure>
+      <p><b>Pavel was found by luck. We exist so that you don't need luck.</b></p>
     </div>
   </div>
 </section>
