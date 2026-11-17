@@ -6,7 +6,12 @@ import { put, get, list } from '@vercel/blob';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS } from '../lib/brief.js';
 
-const MODEL = 'claude-opus-5-5';
+// With ANTHROPIC_API_KEY set, calls go straight to Anthropic. Without it they go
+// through Vercel AI Gateway, signed by the project's own identity token and
+// billed to the Vercel account, so no separate key is needed.
+let gatewayToken = '';
+const direct = () => Boolean(process.env.ANTHROPIC_API_KEY);
+const model = () => (direct() ? 'claude-opus-5-5' : 'anthropic/claude-opus-5.5');
 const TRAITS = Object.keys(RUBRIC);
 const BUDGET_MS = 240_000; // stop starting new model work after this; the function limit is 300s
 
@@ -42,23 +47,23 @@ async function readAll(prefix) {
 
 // ---------- model -------------------------------------------------------------
 
-const client = () => new Anthropic();
+const client = () => (direct() ? new Anthropic() : new Anthropic({ apiKey: gatewayToken, baseURL: 'https://ai-gateway.vercel.sh' }));
 const textOf = (msg) => msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
 
 async function research(system, prompt, searches, deadline) {
   let messages = [{ role: 'user', content: prompt }];
   for (let i = 0; i < 4; i++) {
-    const reply = await client().beta.messages.stream({
-      model: MODEL,
-      max_tokens: 16000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'medium' },
-      system,
-      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: searches }],
-      messages,
-    }).finalMessage();
+    const base = {
+      model: model(), max_tokens: 16000, thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, system, messages,
+    };
+    const reply = direct()
+      ? await client().beta.messages.stream({
+          ...base, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+          tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: searches }],
+        }).finalMessage()
+      : await client().messages.stream({
+          ...base, tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: searches }],
+        }).finalMessage();
     if (reply.stop_reason === 'refusal') return '';
     if (reply.stop_reason !== 'pause_turn' || Date.now() > deadline) return textOf(reply);
     messages = [messages[0], { role: 'assistant', content: reply.content }];
@@ -68,14 +73,16 @@ async function research(system, prompt, searches, deadline) {
 
 async function structure(system, content, schema) {
   const reply = await client().messages.create({
-    model: MODEL,
+    model: model(),
     max_tokens: 16000,
     output_config: { effort: 'low', format: { type: 'json_schema', schema } },
     system,
     messages: [{ role: 'user', content }],
   });
   if (reply.stop_reason !== 'end_turn') return null;
-  try { return JSON.parse(textOf(reply)); } catch { return null; }
+  const text = textOf(reply);
+  try { return JSON.parse(text); } catch {}
+  try { return JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch { return null; }
 }
 
 const obj = (properties) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
@@ -259,17 +266,18 @@ export default async function handler(req, res) {
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const action = ACTIONS[body.action];
   if (!action) return res.status(400).json({ error: 'Unknown action.' });
-  if (['run', 'intake', 'match'].includes(body.action) && !process.env.ANTHROPIC_API_KEY) {
-    return res.status(503).json({ error: 'Not set up yet: add ANTHROPIC_API_KEY in the Vercel project settings, then redeploy.' });
+  gatewayToken = req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN || '';
+  if (['run', 'intake', 'match'].includes(body.action) && !direct() && !gatewayToken) {
+    return res.status(503).json({ error: 'No AI access: add ANTHROPIC_API_KEY in the Vercel project settings, then redeploy.' });
   }
   try {
     return res.status(200).json(await action(body));
   } catch (err) {
     if (err.status && err.status < 500 && !(err instanceof Anthropic.APIError)) return res.status(err.status).json({ error: err.message });
     console.error(body.action, err);
-    const hint = err instanceof Anthropic.AuthenticationError ? 'The Anthropic API key was rejected.'
-      : err instanceof Anthropic.RateLimitError ? 'Anthropic rate limit reached. Wait a minute and try again.'
-      : err instanceof Anthropic.APIError ? `Anthropic API error ${err.status ?? ''}: ${err.message}`
+    const hint = err instanceof Anthropic.AuthenticationError ? 'AI access was refused. Check AI Gateway is enabled for the Vercel team, or the API key.'
+      : err instanceof Anthropic.RateLimitError ? 'Rate limit reached. Wait a minute and try again.'
+      : err instanceof Anthropic.APIError ? `AI service error ${err.status ?? ''}: ${err.message}`
       : 'Something failed on the server. The details are in the Vercel logs.';
     return res.status(502).json({ error: hint });
   }
