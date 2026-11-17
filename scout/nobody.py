@@ -33,11 +33,11 @@ client = anthropic.Anthropic()
 # ---------- shapes ----------------------------------------------------------
 
 class Scores(BaseModel):
-    access: int = Field(ge=0, le=3)
-    habit: int = Field(ge=0, le=3)
-    turn: int = Field(ge=0, le=3)
+    perspective: int = Field(ge=0, le=3)
+    moment: int = Field(ge=0, le=3)
     voice: int = Field(ge=0, le=3)
     drive: int = Field(ge=0, le=3)
+    record: int = Field(ge=0, le=3)
     undiscovered: int = Field(ge=0, le=3)
 
 

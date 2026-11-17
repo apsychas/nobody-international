@@ -9,39 +9,32 @@ so the people running the project can edit it without touching the code.
 # in Karabash who already filmed everything, saw his job change, answered a
 # call for stories with a long angry letter, and wanted the story told.
 ARCHETYPE = """\
-We are looking for a person, not a film. The person has these traits:
+We are looking for a person, not a film: someone with a unique perspective
+during difficult or unprecedented times.
 
-1. INSIDE. They hold an ordinary job or role inside a place outsiders cannot
-   film: a school, clinic, mine, port, barracks, parish, call centre, prison,
-   town hall, factory floor, fishing fleet, border post.
-2. ALREADY RECORDING. They film, photograph, record or write for mundane
-   reasons: school videographer, wedding filmer, parish archivist, union
-   newsletter, a tiny channel about their town, a diary. The habit predates
-   any idea of making a film.
-3. A TURN. Something in their world changed and they could not unsee it.
-   The story is under way now, not finished.
-4. A VOICE. In their own posts, letters or videos they are funny, angry,
-   tender, specific. You would follow this person for ninety minutes.
-5. WANTS TO TELL IT. This is the trait that matters most. They show, in
-   public and in their own name, that they want their story told: they keep
-   posting, writing, filming, speaking up, asking to be heard.
-6. NOT YET IN THE INDUSTRY. Some video experience is welcome and often a good
-   sign: Pavel filmed school events for a living. Local prizes are fine too.
-   What rules a person out is any international prize or award, or an
-   established film or media career: international festival credits, a
-   production company, an agent, a press team.
-7. NOWHERE. They live where nobody is looking: a small town, a periphery,
-   a language that film funds rarely read.
+1. A UNIQUE PERSPECTIVE. They see something from where they stand that almost
+   nobody else can show: from inside an institution, a job, a family, a street.
+2. DIFFICULT OR UNPRECEDENTED TIMES. Something large is happening around them
+   now: a war, a crackdown, a disaster, an epidemic, a collapse, a closure, a
+   sudden new rule. The story is still under way.
+3. A VOICE. In their own posts, letters or recordings they are funny, angry,
+   tender, specific. You would follow them for ninety minutes.
+4. THEY WANT TO TELL IT. They already speak, post, write or film in their own
+   name, or have asked to be heard.
+5. THEY KEEP A RECORD. Video, photographs, diaries, documents. Strongest when
+   recording is part of their job or goes back years.
+6. NOT YET FOUND. Some film experience, local prizes and local press are fine.
+   Only international prize winners and established film or media
+   professionals are out.
 """
 
 RUBRIC = {
-    "access": "Are they inside something outsiders cannot film?",
-    "habit": "Do they already record, for ordinary reasons?",
-    "turn": "Is something changing around them right now?",
+    "perspective": "Do they see this from a position almost nobody else can show?",
+    "moment": "Are they living through difficult or unprecedented times right now?",
     "voice": "Is their own voice distinctive on the page or on camera?",
     "drive": "Do they visibly want to tell this story themselves?",
-    "undiscovered": "Are they outside the film industry and the national press? "
-                    "(Amateur or workplace video experience does not count against them.)",
+    "record": "Do they already keep a record (video, photos, diaries, documents)?",
+    "undiscovered": "Are they still unknown to the film world and international press?",
 }  # each scored 0-3; 18 is the ceiling
 
 # Lanes are the kinds of public places such a person leaves traces.

@@ -2,42 +2,21 @@
 
 Two things live here.
 
-## `scout/` — the search
+## `scout/` — the command-line scout (older)
 
-Finds people with a story before they have made a film. It works in two modes,
-chosen per country in `scout/brief.py`:
-
-- People may have some video experience, as Pavel did. What the scout scores
-  highest is a visible wish to tell their own story.
-- **Open countries:** searches the public web in the local language across five
-  lanes (local press, first-person writing, small channels, community archives,
-  first-timer workshops) and returns named leads scored against the Pavel
-  profile.
-- **High-risk countries** (`HIGH_RISK` in `brief.py`): never names an
-  individual. It maps the exile media, diaspora groups and professional
-  networks that could carry an open call, so people choose to come forward.
+The private page at `/scout` is the tool to use; see below. This folder holds
+the earlier command-line version, kept in step with the same brief: it looks
+for people with a unique perspective during difficult or unprecedented times.
 
 ```bash
 cd scout
 pip install -r requirements.txt
-export ANTHROPIC_API_KEY=...          # or: ant auth login
-
-python nobody.py scout --dry-run                      # the plan: 308 runs
+export ANTHROPIC_API_KEY=...
 python nobody.py scout --country Brazil --country Kenya
-python nobody.py intake letters.json                  # inbound letters, any language
-python nobody.py match                                # propose introductions
-python nobody.py report --min 10                      # review queue, best first
+python nobody.py report
 ```
 
-`intake` reads a JSON list of `{name, country, language, role, story}`.
-Results accumulate in `scout/data/leads.jsonl` and `introductions.jsonl`.
-
-Edit `brief.py` to change who you are looking for, where, and in which
-languages. Nothing in the tool contacts anyone: every lead is for a person to
-read first.
-
-Not yet run against the live API (no key in the build session). A full sweep is
-308 research runs of up to 10 web searches each; start with two countries.
+It lacks the page's newer features (open questions, story types, events, notes).
 
 ## `site/` — the website
 
