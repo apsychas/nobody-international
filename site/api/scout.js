@@ -331,8 +331,17 @@ async function questions() {
   return { questions: list.map((q) => ({ ...q, replies: counts[q.code] || 0 })).sort((a, b) => (b.created || '').localeCompare(a.created || '')) };
 }
 
+async function note({ id, note: text }) {
+  if (!/^[0-9a-f]{20}$/.test(id || '')) throw fail(400, 'Bad request.');
+  const pathname = `scout/leads/${id}.json`;
+  const lead = await readJson(pathname);
+  if (!lead) throw fail(404, 'No such lead.');
+  await writeJson(pathname, { ...lead, note: String(text || '').slice(0, 4000) });
+  return { ok: true };
+}
+
 const ACTIONS = {
-  questions, draft, saveQuestion, setQuestion,
+  note, questions, draft, saveQuestion, setQuestion,
   config: async () => ({
     regions: REGIONS.map(([country, languages]) => ({ country, languages })),
     highRisk: [...HIGH_RISK],

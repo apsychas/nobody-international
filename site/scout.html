@@ -67,6 +67,8 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 .lead .links { margin-top: .6rem; font-size: .88rem; display: grid; gap: .15rem; overflow-wrap: anywhere }
 .lead details { margin-top: .7rem } .lead summary { cursor: pointer; font-weight: 600; font-size: .93rem }
 .lead pre { white-space: pre-wrap; font: italic 400 1.1rem/1.5 var(--voice); margin: .6rem 0 0; max-width: 46em }
+.lead .note { display: block; width: 100%; max-width: 46em; margin-top: .9rem; font: 400 .95rem/1.45 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .5rem .7rem; resize: vertical; field-sizing: content; min-height: 2.4rem }
+.lead .note.bad { border-color: var(--ink); border-style: dashed }
 .lead .acts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem }
 .empty { padding: 2.5rem 0; border-top: 1px solid var(--rule); color: var(--mute); max-width: 40em }
 
@@ -118,6 +120,11 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     <div class="bar">
       <label class="label" for="fCountry">Country</label><select id="fCountry"></select>
       <label class="label" for="fType">Type of story</label><select id="fType"></select>
+      <label class="label" for="fSort">Order</label><select id="fSort"><option value="score">Best score first</option><option value="new">Newest first</option></select>
+    </div>
+    <div class="bar">
+      <input type="text" id="fText" placeholder="Search names, stories and notes" maxlength="80">
+      <button class="quiet" id="export">Download this list</button>
     </div>
     <div id="leads"></div>
   </section>
@@ -226,7 +233,15 @@ const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["pass
 const scaled = l => l.total / ((Object.keys(l.scores || {}).length || 6) * 3);
 const typeName = id => ((config.storyTypes || {})[id] || "").split(",")[0] || "Other";
 const inView = (l, id) => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id;
-const narrowed = () => data.leads.filter(l => (!$("fCountry").value || l.country === $("fCountry").value) && (!$("fType").value || (l.story_type || "other") === $("fType").value));
+const hay = l => [l.name, l.role, l.place, l.country, l.story, l.pitch, l.moment, l.note, l.letter, (l.themes || []).join(" ")].join(" ").toLowerCase();
+const narrowed = () => { const t = $("fText").value.trim().toLowerCase(); return data.leads.filter(l => (!$("fCountry").value || l.country === $("fCountry").value) && (!$("fType").value || (l.story_type || "other") === $("fType").value) && (!t || hay(l).includes(t))); };
+$("fText").addEventListener("input", renderQueue); $("fSort").addEventListener("change", renderQueue);
+$("export").addEventListener("click", () => {
+  const cols = ["name", "role", "place", "country", "story_type", "moment", "pitch", "story", "total", "status", "lane", "found", "contact", "note", "cautions", "sources"];
+  const cell = v => '"' + String(Array.isArray(v) ? v.join(" ") : v ?? "").replace(/"/g, '""') + '"';
+  const csv = "\ufeff" + [cols.join(","), ...shown().map(l => cols.map(c => cell(l[c])).join(","))].join("\r\n");
+  const a = el("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = "nobody-scout.csv"; document.body.append(a); a.click(); a.remove();
+});
 function fillSelect(sel, any, options) {
   const keep = sel.value; sel.textContent = "";
   [["", any], ...options].forEach(([v, name]) => { const o = el("option", "", name); o.value = v; sel.append(o); });
@@ -235,7 +250,7 @@ function fillSelect(sel, any, options) {
 $("fCountry").addEventListener("change", renderQueue); $("fType").addEventListener("change", renderQueue);
 function shown() {
   return narrowed().filter(l => inView(l, filter))
-    .sort((a, b) => scaled(b) - scaled(a) || (b.found || "").localeCompare(a.found || ""));
+    .sort((a, b) => $("fSort").value === "new" ? (b.found || "").localeCompare(a.found || "") || scaled(b) - scaled(a) : scaled(b) - scaled(a) || (b.found || "").localeCompare(a.found || ""));
 }
 function renderQueue() {
   fillSelect($("fCountry"), "All countries", [...new Set(data.leads.map(l => l.country).filter(Boolean))].sort().map(c => [c, c]));
@@ -268,6 +283,9 @@ function card(l) {
   if (l.letter) { const d = el("details"); d.append(el("summary", "", "Their letter"), el("pre", "", l.letter)); b.append(d); }
   const links = (l.sources || []).filter(u => /^https?:\/\//i.test(u));
   if (links.length) { const k = el("div", "links"); links.forEach(u => { const a = el("a", "", u); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; k.append(a); }); b.append(k); }
+  const note = el("textarea", "note"); note.placeholder = "Your notes"; note.value = l.note || ""; note.rows = 1; note.setAttribute("aria-label", "Notes on " + (l.name || "this entry"));
+  note.addEventListener("change", async () => { try { await api("note", { id: l.id, note: note.value }); l.note = note.value; note.classList.remove("bad"); } catch (err) { note.classList.add("bad"); } });
+  b.append(note);
   if (l.kind === "person") {
     const acts = el("div", "acts");
     [["shortlist", "Shortlist"], ["passed", "Pass"], ["unreviewed", "Back to review"]].filter(([st]) => st !== l.status).forEach(([st, name]) => {
