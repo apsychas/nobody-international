@@ -273,6 +273,7 @@ function card(l) {
   b.append(el("h3", "", l.name || "Unnamed"));
   b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane === "intermediaries" ? "organisation" : l.lane, l.kind === "person" ? typeName(l.story_type || "other").toLowerCase() : ""].filter(Boolean).join(" · ")));
   if (l.pitch) b.append(el("p", "pitch", l.pitch));
+  if (/^https?:\/\//i.test(l.own_channel || "")) { const w = el("p", "who", "In their own words: "), a = el("a", "", l.own_channel); a.href = l.own_channel; a.target = "_blank"; a.rel = "noopener noreferrer"; w.append(a); b.append(w); }
   if (l.moment) b.append(el("p", "who", "The times: " + l.moment));
   b.append(el("p", "", l.story));
   if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
@@ -361,7 +362,7 @@ $("go").addEventListener("click", async () => {
   for (let i = 0; i < runs.length && !stopping; i++) {
     const r = runs[i], line = el("div", "", (i + 1) + "/" + runs.length + "  " + r.country + " · " + r.language + " · " + (r.lane === "intermediaries" ? "organisations" : r.lane) + "  …"); log.append(line);
     try { const out = await api("run", r); total += out.added; line.textContent = line.textContent.replace("…", out.found + " found, " + out.added + " new"); }
-    catch (err) { line.textContent = line.textContent.replace("…", "failed: " + err.message); if (err.status === 401 || err.status === 503) break; }
+    catch (err) { line.textContent = line.textContent.replace("…", "failed: " + err.message); if (err.status === 401 || err.status === 402 || err.status === 503) break; }
   }
   log.append(el("div", "", (stopping ? "Stopped. " : "Done. ") + total + " added to the queue."));
   $("stop").hidden = true; showPlan(); refresh().catch(() => {});

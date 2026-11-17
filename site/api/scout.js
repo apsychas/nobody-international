@@ -94,6 +94,7 @@ const LEAD = obj({
   story: str('Two or three sentences in English: what they see from where they stand, and what is happening around them'),
   moment: str('In a few words: the difficult or unprecedented time they are living through, e.g. "school closures after the 2025 floods"'),
   pitch: str('One sentence in English: why this person could carry a film'),
+  own_channel: str('URL of the page, channel or profile where they speak in their own name, or empty if none was found'),
   in_their_words: str('A short quotation in the original language, or empty'),
   sources: { type: 'array', items: { type: 'string' }, description: 'Public URLs the claims come from' },
   scores: obj(Object.fromEntries(TRAITS.map((t) => [t, { type: 'integer', description: `0-3. ${RUBRIC[t]}` }]))),
@@ -161,8 +162,9 @@ Rules
 - Cast a wide net. The traits above are for scoring, not for ruling people out: report every person who has a perspective of their own on difficult or unprecedented times and some sign they might tell it, including partial fits and people you have doubts about. People will do the filtering later. Aim for eight to twelve people per search, and use every search you are given, varying the wording each time.
 - Leave out only two kinds of person: anyone who has won an international prize or award, and established film or media professionals. Everyone else stays in. If someone has had national press coverage, a local prize or some film experience, include them and say so.
 - For each person, state your doubts plainly in what a human should check. Never drop someone because of a doubt.
+- A person quoted once in a news report is a starting point, not a find. For each one, search again for their own page, channel, posts or interviews, and report what they say and keep in their own name. Rank people who tell their own story above people a reporter spoke for. If you find nothing of their own, include them and say so.
 - Start from what is happening in this country now and in the last few years, nationally and in small places, then look for the people living it. If you are given an event or situation, stay with it.
-- For each find give: public name, place, role, what they see from where they stand, what difficult or unprecedented thing is happening around them, why this could be a film, one short quotation in the original language, the URLs, and what a human should check before contact.`;
+- For each find give: public name, place, role, what they see from where they stand, what difficult or unprecedented thing is happening around them, why this could be a film, where they speak or post in their own name (a URL, or 'not found'), what record they keep, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 
 const RISK_RULES = `
 
@@ -247,7 +249,7 @@ async function intake() {
       JSON.stringify(letter), LEADS);
     const raw = parsed?.leads?.[0] || {
       name: letter.name, place: letter.location, role: letter.role, story: 'Could not be read automatically. Open the letter.',
-      in_their_words: '', sources: [], scores: {}, themes: [], story_type: 'other', moment: '', pitch: '', cautions: 'Not scored.',
+      in_their_words: '', sources: [], scores: {}, themes: [], story_type: 'other', moment: '', pitch: '', own_channel: '', cautions: 'Not scored.',
     };
     const id = hash(blob.pathname);
     await writeJson(`scout/leads/${id}.json`, finish(raw, {
@@ -385,6 +387,7 @@ export default async function handler(req, res) {
   } catch (err) {
     if (err.status && err.status < 500 && !(err instanceof Anthropic.APIError)) return res.status(err.status).json({ error: err.message });
     console.error(body.action, err);
+    if (/credit balance/i.test(String(err.message))) return res.status(402).json({ error: 'Your Anthropic account is out of credit. Add credit at console.anthropic.com under Plans & Billing, then try again.' });
     const hint = err instanceof Anthropic.AuthenticationError ? 'AI access was refused. Check AI Gateway is enabled for the Vercel team, or the API key.'
       : err instanceof Anthropic.RateLimitError ? 'Rate limit reached. Wait a minute and try again.'
       : err instanceof Anthropic.APIError ? `AI service error ${err.status ?? ''}: ${err.message}`
