@@ -44,6 +44,7 @@ button.quiet[aria-pressed="true"] { background: var(--ink); color: var(--paper) 
 .gate h2 { font: 800 2.4rem/1 var(--display); font-stretch: 112%; letter-spacing: -.04em; text-transform: uppercase }
 input[type=password], input[type=number] { width: 100%; font: 400 1.05rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .7rem .8rem }
 input[type=number] { width: 5rem }
+select { font: 400 1rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .45rem .6rem; max-width: 100% }
 input[type=text] { flex: 1 1 11rem; min-width: 0; font: 400 1rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .5rem .7rem }
 .note { color: var(--mute); font-size: .93rem; max-width: 44em }
 .msg { min-height: 1.5rem; font-size: .95rem }
@@ -108,6 +109,10 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     <h2>Review queue</h2>
     <p class="note">Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
     <div class="bar" id="filters"></div>
+    <div class="bar">
+      <label class="label" for="fCountry">Country</label><select id="fCountry"></select>
+      <label class="label" for="fType">Type of story</label><select id="fType"></select>
+    </div>
     <div id="leads"></div>
   </section>
 
@@ -125,6 +130,9 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     </form>
     <p class="label">Where to look</p>
     <div class="lanes" id="lanes"></div>
+    <p class="label" style="margin-top:1.5rem">Type of story</p>
+    <p class="note">Leave all unticked to look for any kind of story.</p>
+    <div class="grid" id="types"></div>
     <div class="bar">
       <button class="act" id="go">Run search</button>
       <button class="quiet" id="stop" hidden>Stop after this run</button>
@@ -141,9 +149,9 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="intros" hidden>
     <h2>Introductions</h2>
-    <p class="note">Proposes pairs in different countries who would recognise something in each other. Uses everyone in the queue at or above the score you set, except those you passed on.</p>
+    <p class="note">Proposes pairs in different countries who would recognise something in each other. Uses everyone in the queue at or above the score you set (out of 24), except those you passed on.</p>
     <div class="bar">
-      <label class="label" for="min">Minimum score</label><input type="number" id="min" min="0" max="18" value="12">
+      <label class="label" for="min">Minimum score</label><input type="number" id="min" min="0" max="24" value="14">
       <button class="act" id="propose">Propose introductions</button><span class="msg" id="introMsg" role="status"></span>
     </div>
     <div id="introList"></div>
@@ -190,14 +198,25 @@ async function refresh() {
   $("lettersMsg").textContent = data.unreadLetters ? data.unreadLetters + " new" : "No new letters.";
 }
 const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Organisations"], ["all", "Everything"]];
+const typeName = id => ((config.storyTypes || {})[id] || "").split(",")[0] || "Other";
+const inView = (l, id) => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id;
+const narrowed = () => data.leads.filter(l => (!$("fCountry").value || l.country === $("fCountry").value) && (!$("fType").value || (l.story_type || "other") === $("fType").value));
+function fillSelect(sel, any, options) {
+  const keep = sel.value; sel.textContent = "";
+  [["", any], ...options].forEach(([v, name]) => { const o = el("option", "", name); o.value = v; sel.append(o); });
+  sel.value = options.some(([v]) => v === keep) ? keep : "";
+}
+$("fCountry").addEventListener("change", renderQueue); $("fType").addEventListener("change", renderQueue);
 function shown() {
-  return data.leads.filter(l => filter === "all" ? true : filter === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === filter)
+  return narrowed().filter(l => inView(l, filter))
     .sort((a, b) => b.total - a.total || (b.found || "").localeCompare(a.found || ""));
 }
 function renderQueue() {
+  fillSelect($("fCountry"), "All countries", [...new Set(data.leads.map(l => l.country).filter(Boolean))].sort().map(c => [c, c]));
+  fillSelect($("fType"), "All types", Object.keys(config.storyTypes || {}).filter(t => data.leads.some(l => (l.story_type || "other") === t)).map(t => [t, typeName(t)]));
   const bar = $("filters"); bar.textContent = "";
   FILTERS.forEach(([id, name]) => {
-    const n = data.leads.filter(l => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id).length;
+    const n = narrowed().filter(l => inView(l, id)).length;
     const b = el("button", "quiet", name + " " + n); b.setAttribute("aria-pressed", filter === id);
     b.addEventListener("click", () => { filter = id; renderQueue(); }); bar.append(b);
   });
@@ -208,10 +227,10 @@ function renderQueue() {
 }
 function card(l) {
   const c = el("article", "lead");
-  const s = el("div", "score", l.kind === "person" ? String(l.total) : "–"); s.append(el("small", "", l.kind === "person" ? "of 18" : "org")); c.append(s);
+  const s = el("div", "score", l.kind === "person" ? String(l.total) : "–"); s.append(el("small", "", l.kind === "person" ? "of " + (Object.keys(l.scores || {}).length * 3 || 18) : "org")); c.append(s);
   const b = el("div");
   b.append(el("h3", "", l.name || "Unnamed"));
-  b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane === "intermediaries" ? "organisation" : l.lane].filter(Boolean).join(" · ")));
+  b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane === "intermediaries" ? "organisation" : l.lane, l.kind === "person" ? typeName(l.story_type || "other").toLowerCase() : ""].filter(Boolean).join(" · ")));
   b.append(el("p", "", l.story));
   if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
   if (l.cautions) b.append(el("p", "check", "Check first: " + l.cautions));
@@ -270,14 +289,19 @@ function buildSearch() {
     const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.checked = true; box.id = "l-" + id;
     const t = el("span"); t.append(el("b", "", id.replace("-", " ") + ". "), text); lab.append(box, t); ls.append(lab);
   });
+  const ts = $("types"); ts.textContent = "";
+  Object.entries(config.storyTypes || {}).filter(([id]) => id !== "other").forEach(([id, text]) => {
+    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.id = "t-" + id; lab.title = text;
+    lab.append(box, el("span", "", text.split(",")[0])); ts.append(lab);
+  });
   $("search").addEventListener("change", showPlan); showPlan();
 }
 function plan() {
-  const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), out = [];
+  const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), types = [...$("types").querySelectorAll("input:checked")].map(i => i.value), out = [];
   [...$("countries").querySelectorAll("input:checked")].forEach(i => {
     const r = config.regions.find(x => x.country === i.value);
     const risky = (config.highRisk || []).some(c => c.toLowerCase() === r.country.toLowerCase());
-    r.languages.forEach(language => (risky ? ["intermediaries", ...lanes] : lanes).forEach(lane => out.push({ country: r.country, language, lane })));
+    r.languages.forEach(language => (risky ? ["intermediaries", ...lanes] : lanes).forEach(lane => out.push({ country: r.country, language, lane, types })));
   });
   return out;
 }

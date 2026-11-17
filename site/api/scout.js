@@ -4,7 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { put, get, list } from '@vercel/blob';
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS } from '../lib/brief.js';
+import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS, STORY_TYPES } from '../lib/brief.js';
 
 // With ANTHROPIC_API_KEY set, calls go straight to Anthropic. Without it they go
 // through Vercel AI Gateway, signed by the project's own identity token and
@@ -96,6 +96,7 @@ const LEAD = obj({
   sources: { type: 'array', items: { type: 'string' }, description: 'Public URLs the claims come from' },
   scores: obj(Object.fromEntries(TRAITS.map((t) => [t, { type: 'integer', description: `0-3. ${RUBRIC[t]}` }]))),
   themes: { type: 'array', items: { type: 'string' }, description: "3-6 lowercase tags, e.g. 'school', 'mining town'" },
+  story_type: { type: 'string', enum: Object.keys(STORY_TYPES), description: 'The one kind of story this is. ' + Object.entries(STORY_TYPES).map(([k, v]) => `${k}: ${v}`).join('; ') },
   cautions: str('Anything a human should check before any contact: safety, minors, consent, doubt about facts'),
 });
 const LEADS = obj({ leads: { type: 'array', items: LEAD } });
@@ -143,6 +144,7 @@ function finish(lead, extra) {
   const scores = Object.fromEntries(TRAITS.map((t) => [t, Math.max(0, Math.min(3, Number(lead.scores?.[t]) || 0))]));
   return {
     ...lead, scores,
+    story_type: STORY_TYPES[lead.story_type] ? lead.story_type : 'other',
     total: TRAITS.reduce((n, t) => n + scores[t], 0),
     found: new Date().toISOString().slice(0, 10),
     status: 'unreviewed',
@@ -163,10 +165,12 @@ async function run(body) {
   // In higher-risk countries the page runs an organisations search first
   // ('intermediaries'), then the ordinary searches for people.
   const risky = isHighRisk(country), orgs = lane === 'intermediaries';
+  const types = (Array.isArray(body.types) ? body.types : []).filter((t) => STORY_TYPES[t] && t !== 'other');
   if (!orgs && !LANES[lane]) throw fail(400, 'Unknown lane.');
   const deadline = Date.now() + BUDGET_MS;
   const prompt = `Country: ${country}. Language to search in: ${language}.` +
-    (orgs ? '' : `\nWhere to look this time: ${LANES[lane]}`);
+    (orgs ? '' : `\nWhere to look this time: ${LANES[lane]}`) +
+    (types.length ? `\nOnly these kinds of story this time: ${types.map((t) => STORY_TYPES[t]).join('; ')}. Leave out anything else.` : '');
   const notes = await research(orgs ? RELAY_SYSTEM : SCOUT_SYSTEM + (risky ? RISK_RULES : ''), prompt, Math.max(1, Math.min(10, searches)), deadline);
   if (!notes.trim()) return { found: 0, added: 0 };
   const parsed = await structure(
@@ -202,7 +206,7 @@ async function intake() {
       JSON.stringify(letter), LEADS);
     const raw = parsed?.leads?.[0] || {
       name: letter.name, place: letter.location, role: letter.role, story: 'Could not be read automatically. Open the letter.',
-      in_their_words: '', sources: [], scores: {}, themes: [], cautions: 'Not scored.',
+      in_their_words: '', sources: [], scores: {}, themes: [], story_type: 'other', cautions: 'Not scored.',
     };
     const id = hash(blob.pathname);
     await writeJson(`scout/leads/${id}.json`, finish(raw, {
@@ -249,7 +253,7 @@ const ACTIONS = {
   config: async () => ({
     regions: REGIONS.map(([country, languages]) => ({ country, languages })),
     highRisk: [...HIGH_RISK],
-    lanes: LANES, rubric: RUBRIC,
+    lanes: LANES, rubric: RUBRIC, storyTypes: STORY_TYPES,
   }),
   leads: async () => {
     const [leads, intros, letters] = await Promise.all([readAll('scout/leads/'), readAll('scout/intros/'), listAll('letters/')]);
