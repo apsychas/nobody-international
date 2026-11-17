@@ -122,8 +122,9 @@ Rules
 - Search in the language you are given, using the words a local would use. Do not search in English unless English is the language given.
 - Only people who have already chosen to publish under their own name or handle. Never infer identities, never combine sources to unmask anyone, never collect contact details, addresses, family members or employers beyond what the person states publicly.
 - No minors.
-- Skip anyone who has won any international prize or award, anyone already covered by national or international press, and anyone with an established film or media career. Everyday video experience is fine, and so are local prizes: note any prize you find and whether it is local or international.
-- Prefer three real finds to ten weak ones. If you find nobody, say so.
+- Cast a wide net. The traits above are for scoring, not for ruling people out: report every person who has an interesting story from inside something and some sign they might tell it, including partial fits and people you have doubts about. People will do the filtering later. Aim for eight to twelve people per search, and use every search you are given, varying the wording each time.
+- Leave out only two kinds of person: anyone who has won an international prize or award, and established film or media professionals. Everyone else stays in. If someone has had national press coverage, a local prize or some film experience, include them and say so.
+- For each person, state your doubts plainly in what a human should check. Never drop someone because of a doubt.
 - For each find give: public name, place, role, what they are inside of, what is changing, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 
 const RISK_RULES = `
@@ -158,7 +159,7 @@ const PLACE = /^[\p{L}\p{M}' .()-]{2,60}$/u; // a country or language name, noth
 const isHighRisk = (country) => [...HIGH_RISK].some((c) => c.toLowerCase() === country.toLowerCase());
 
 async function run(body) {
-  const { lane, searches = 6 } = body;
+  const { lane, searches = 8 } = body;
   // Any country and language may be searched, not only those in the brief.
   const country = String(body.country || '').trim(), language = String(body.language || '').trim();
   if (!PLACE.test(country) || !PLACE.test(language)) throw fail(400, 'Enter a country and a language, in letters only.');
@@ -174,7 +175,7 @@ async function run(body) {
   const notes = await research(orgs ? RELAY_SYSTEM : SCOUT_SYSTEM + (risky ? RISK_RULES : ''), prompt, Math.max(1, Math.min(10, searches)), deadline);
   if (!notes.trim()) return { found: 0, added: 0 };
   const parsed = await structure(
-    'Convert these scouting notes into records. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
+    'Convert these scouting notes into records: one record for every person or organisation named in them, including those the scout had doubts about or scored low. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
       RUBRIC_TEXT + (orgs ? '\nThese are organisations: set every score to 0.' : ''),
     notes, LEADS);
   const existing = new Set((await listAll('scout/leads/')).map((b) => b.pathname));
