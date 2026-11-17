@@ -54,4 +54,8 @@ Read letters in the Vercel dashboard: Storage → nobody-letters. To feed them t
 the scout, download them, combine into one JSON list and run
 `python scout/nobody.py intake letters.json`.
 
+The Vercel project is connected to this repository with `site` as its root
+directory: every push to `main` redeploys the live site, and other branches get
+preview deployments.
+
 To add your own domain: Vercel dashboard → the project → Settings → Domains.
