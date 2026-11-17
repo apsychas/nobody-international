@@ -144,10 +144,15 @@ function finish(lead, extra) {
 
 // ---------- actions -----------------------------------------------------------
 
-async function run({ country, language, lane, searches = 6 }) {
-  const region = REGIONS.find(([c]) => c === country);
-  if (!region || !region[1].includes(language)) throw fail(400, 'Unknown country or language.');
-  const risky = HIGH_RISK.has(country);
+const PLACE = /^[\p{L}\p{M}' .()-]{2,60}$/u; // a country or language name, nothing else
+const isHighRisk = (country) => [...HIGH_RISK].some((c) => c.toLowerCase() === country.toLowerCase());
+
+async function run(body) {
+  const { lane, searches = 6 } = body;
+  // Any country and language may be searched, not only those in the brief.
+  const country = String(body.country || '').trim(), language = String(body.language || '').trim();
+  if (!PLACE.test(country) || !PLACE.test(language)) throw fail(400, 'Enter a country and a language, in letters only.');
+  const risky = isHighRisk(country);
   if (!risky && !LANES[lane]) throw fail(400, 'Unknown lane.');
   const deadline = Date.now() + BUDGET_MS;
   const prompt = `Country: ${country}. Language to search in: ${language}.` +
@@ -235,6 +240,7 @@ async function mark({ id, status }) {
 const ACTIONS = {
   config: async () => ({
     regions: REGIONS.map(([country, languages]) => ({ country, languages, relaysOnly: HIGH_RISK.has(country) })),
+    highRisk: [...HIGH_RISK],
     lanes: LANES, rubric: RUBRIC,
   }),
   leads: async () => {

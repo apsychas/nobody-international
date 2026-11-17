@@ -44,6 +44,7 @@ button.quiet[aria-pressed="true"] { background: var(--ink); color: var(--paper) 
 .gate h2 { font: 800 2.4rem/1 var(--display); font-stretch: 112%; letter-spacing: -.04em; text-transform: uppercase }
 input[type=password], input[type=number] { width: 100%; font: 400 1.05rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .7rem .8rem }
 input[type=number] { width: 5rem }
+input[type=text] { flex: 1 1 11rem; min-width: 0; font: 400 1rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .5rem .7rem }
 .note { color: var(--mute); font-size: .93rem; max-width: 44em }
 .msg { min-height: 1.5rem; font-size: .95rem }
 
@@ -115,6 +116,13 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     <p class="note">Each run searches one country in one language in one kind of place. In countries marked "relays only" the scout names no individuals; it lists organisations that could carry an open call.</p>
     <div class="bar"><span class="label">Countries</span><span class="spacer"></span><button class="quiet" id="none">Clear</button></div>
     <div class="grid" id="countries"></div>
+    <form class="bar" id="addForm">
+      <label class="label" for="addCountry">Add a country</label>
+      <input type="text" id="addCountry" placeholder="Country" maxlength="60" required>
+      <input type="text" id="addLangs" placeholder="Languages, separated by commas" maxlength="200" required>
+      <button class="quiet" type="submit">Add</button>
+      <span class="msg" id="addMsg" role="status"></span>
+    </form>
     <p class="label">Where to look</p>
     <div class="lanes" id="lanes"></div>
     <div class="bar">
@@ -225,13 +233,38 @@ function card(l) {
 }
 
 // ---- search
+const CUSTOM = "scout-custom-countries", PLACE = /^[\p{L}\p{M}' .()-]{2,60}$/u;
+function saveCustom() { try { localStorage.setItem(CUSTOM, JSON.stringify(config.regions.filter(r => r.custom))); } catch (e) {} }
+function addCountryBox(r, checked) {
+  const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = r.country; box.checked = !!checked; box.id = "c-" + r.country.replace(/\W/g, "");
+  const t = el("span", "", r.country + " "); if (r.relaysOnly) t.append(el("small", "", "relays only"));
+  lab.append(box, t);
+  if (r.custom) {
+    lab.title = r.languages.join(", ");
+    const x = el("button", "quiet", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + r.country); x.style.padding = ".1rem .4rem";
+    x.addEventListener("click", e => { e.preventDefault(); config.regions = config.regions.filter(y => y !== r); lab.remove(); saveCustom(); showPlan(); });
+    lab.append(x);
+  }
+  $("countries").append(lab);
+}
+$("addForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const country = $("addCountry").value.trim(), languages = [...new Set($("addLangs").value.split(",").map(s => s.trim()).filter(Boolean))], m = $("addMsg");
+  if (!PLACE.test(country) || !languages.length || !languages.every(l => PLACE.test(l))) { m.textContent = "Use letters only: a country, then one or more languages separated by commas."; return; }
+  if (config.regions.some(r => r.country.toLowerCase() === country.toLowerCase())) { m.textContent = country + " is already in the list."; return; }
+  const r = { country, languages, custom: true, relaysOnly: (config.highRisk || []).some(c => c.toLowerCase() === country.toLowerCase()) };
+  config.regions.push(r); addCountryBox(r, true); saveCustom(); showPlan();
+  $("addCountry").value = ""; $("addLangs").value = ""; m.textContent = "Added " + country + " (" + languages.join(", ") + ").";
+});
 function buildSearch() {
   const cs = $("countries"); cs.textContent = "";
-  config.regions.forEach(r => {
-    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = r.country; box.id = "c-" + r.country.replace(/\W/g, "");
-    const t = el("span", "", r.country + " "); if (r.relaysOnly) t.append(el("small", "", "relays only"));
-    lab.append(box, t); cs.append(lab);
-  });
+  try {
+    JSON.parse(localStorage.getItem(CUSTOM) || "[]").forEach(r => {
+      if (r && PLACE.test(r.country || "") && Array.isArray(r.languages) && r.languages.length && r.languages.every(l => PLACE.test(l)) && !config.regions.some(x => x.country.toLowerCase() === r.country.toLowerCase()))
+        config.regions.push({ country: r.country, languages: r.languages, custom: true, relaysOnly: (config.highRisk || []).some(c => c.toLowerCase() === r.country.toLowerCase()) });
+    });
+  } catch (e) {}
+  config.regions.forEach(r => addCountryBox(r, false));
   const ls = $("lanes"); ls.textContent = "";
   Object.entries(config.lanes).forEach(([id, text]) => {
     const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.checked = true; box.id = "l-" + id;
