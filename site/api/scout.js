@@ -121,7 +121,7 @@ Rules
 - Search in the language you are given, using the words a local would use. Do not search in English unless English is the language given.
 - Only people who have already chosen to publish under their own name or handle. Never infer identities, never combine sources to unmask anyone, never collect contact details, addresses, family members or employers beyond what the person states publicly.
 - No minors.
-- Skip anyone already covered by national or international press, and anyone with an established film or media career. Everyday video experience is fine.
+- Skip anyone who has won any international prize or award, anyone already covered by national or international press, and anyone with an established film or media career. Everyday video experience is fine, and so are local prizes: note any prize you find and whether it is local or international.
 - Prefer three real finds to ten weak ones. If you find nobody, say so.
 - For each find give: public name, place, role, what they are inside of, what is changing, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 

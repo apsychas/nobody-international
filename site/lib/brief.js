@@ -17,9 +17,11 @@ export const ARCHETYPE = `We are looking for a person, not a film. The person ha
 5. WANTS TO TELL IT. This is the trait that matters most. They show, in
    public and in their own name, that they want their story told.
 6. NOT YET IN THE INDUSTRY. Some video experience is welcome and often a good
-   sign: Pavel Talankin filmed school events for a living. What rules a person
-   out is an established film or media career: festival credits, a production
-   company, an agent, a press team.
+   sign: Pavel Talankin filmed school events for a living. Local recognition is
+   fine too: a town, regional or national prize, a local contest win. What rules
+   a person out is any international prize or award, or an established film or
+   media career: international festival credits, a production company, an
+   agent, a press team.
 7. NOWHERE. They live where nobody is looking: a small town, a periphery,
    a language that film funds rarely read.`;
 
@@ -29,7 +31,7 @@ export const RUBRIC = {
   turn: 'Is something changing around them right now?',
   voice: 'Is their own voice distinctive on the page or on camera?',
   drive: 'Do they visibly want to tell this story themselves?',
-  undiscovered: 'Are they outside the film industry and the national press? (Amateur or workplace video experience does not count against them.)',
+  undiscovered: 'Are they outside the film industry and the national press? (Amateur or workplace video experience and local prizes do not count against them; any international prize scores 0.)',
 }; // each scored 0-3; 18 is the ceiling
 
 export const LANES = {
@@ -37,7 +39,7 @@ export const LANES = {
   'first-person': "Open letters, resignation letters, long first-person posts and essays published under the author's own name.",
   'small-channels': 'Very small video or audio channels (under ~20k followers) run by workers or residents documenting daily life from inside.',
   'community-archives': 'Village chroniclers, home-movie keepers, parish, union and school archivists, community radio hosts.',
-  'first-timers': 'Public lists from community media workshops, first-film labs and local storytelling contests: applicants, not winners.',
+  'first-timers': 'Public lists from community media workshops, first-film labs and local storytelling contests: applicants and local winners alike.',
 };
 
 // Where being identified as someone with a critical story can cost a person

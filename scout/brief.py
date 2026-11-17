@@ -26,9 +26,10 @@ We are looking for a person, not a film. The person has these traits:
    public and in their own name, that they want their story told: they keep
    posting, writing, filming, speaking up, asking to be heard.
 6. NOT YET IN THE INDUSTRY. Some video experience is welcome and often a good
-   sign: Pavel filmed school events for a living. What rules a person out is
-   an established film or media career: festival credits, a production
-   company, an agent, a press team.
+   sign: Pavel filmed school events for a living. Local prizes are fine too.
+   What rules a person out is any international prize or award, or an
+   established film or media career: international festival credits, a
+   production company, an agent, a press team.
 7. NOWHERE. They live where nobody is looking: a small town, a periphery,
    a language that film funds rarely read.
 """
@@ -54,7 +55,7 @@ LANES = {
     "community-archives": "Village chroniclers, home-movie keepers, parish, union "
                           "and school archivists, community radio hosts.",
     "first-timers": "Public lists from community media workshops, first-film labs "
-                    "and local storytelling contests: applicants, not winners.",
+                    "and local storytelling contests: applicants and local winners alike.",
 }
 
 # In these places a person identified as having a critical story to tell can
