@@ -31,8 +31,11 @@ ol, ul { padding: 0; list-style: none }
 
 .label { font: 400 .75rem/1.4 var(--code); letter-spacing: .08em; text-transform: uppercase; color: var(--mute) }
 
-/* header */
-.top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-block: 1.25rem }
+/* header: stays at the top while scrolling */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 1px solid var(--rule) }
+#top, #write { scroll-margin-top: 4rem }
+.top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding-block: 1rem }
+.top a:last-child { font-weight: 700; text-decoration: underline }
 .top a { text-decoration: none }
 .top .name { font-weight: 700; letter-spacing: -.01em }
 .tc { font: 400 .75rem/1 var(--code); letter-spacing: .08em; color: var(--mute); font-variant-numeric: tabular-nums }
@@ -116,6 +119,8 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
 @media (max-width: 760px) {
   .lede p, .lede .go, .row > .label, .row > .body { grid-column: 1 / -1 }
   .gives, form, .creds { grid-template-columns: 1fr }
+  .tc { display: none }
+  .top a { white-space: nowrap }
   .dates li { grid-template-columns: 1fr; gap: 0 }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -124,19 +129,19 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
 }
 </style>
 
-<div class="wrap">
-  <header class="top">
+<header class="bar"><div class="wrap top">
     <a class="name" href="#top">Nobody International</a>
     <span class="tc" id="tc" aria-hidden="true">00:00:00:00</span>
     <a href="#write">Tell us your story</a>
-  </header>
+</div></header>
 
+<div class="wrap">
   <div class="hero" id="top">
     <h1>Nobody <span>International</span></h1>
     <div class="sub" id="sub" aria-hidden="true"><b lang="ru" id="word">Никто</b></div>
     <div class="lede">
       <p>You have a story. We help you tell it.</p>
-      <p class="support">Mentors, a film team and a community for people whose stories are not being told. From the Oscar-winning director of <i>Mr. Nobody Against Putin</i>.</p>
+      <p class="support">For people anywhere in the world who are living a story nobody is filming. The team behind the Oscar-winning <i>Mr. Nobody Against Putin</i> will help you make the film.</p>
       <a class="go" href="#write">Tell us your story</a>
     </div>
   </div>
@@ -162,6 +167,7 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
         <figcaption>Pavel Talankin, accepting the Academy Award, March 2026. Translated from Russian.</figcaption>
       </figure>
       <p><b>Pavel was found by luck. We exist so that you don't need luck.</b></p>
+      <p><a class="go" href="#write">Tell us your story</a></p>
     </div>
   </div>
 </section>
@@ -226,6 +232,7 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
         <li><span>2024</span><em>Can't Feel Nothing</em></li>
         <li><span>2025</span><em>Mr. Nobody Against Putin</em></li>
       </ul>
+      <p style="margin-top:2.5rem"><a class="go" href="#write">Tell us your story</a></p>
     </div>
   </div>
 </section>
