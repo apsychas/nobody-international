@@ -2,48 +2,38 @@
 // The private scout page reads everything from here. (scout/brief.py is the
 // same brief for the command-line tool.)
 
-export const ARCHETYPE = `We are looking for a person, not a film. The person has these traits:
+export const ARCHETYPE = `We are looking for a person, not a film: someone with a unique perspective during difficult or unprecedented times.
 
-1. INSIDE. They hold an ordinary job or role inside a place outsiders cannot
-   film: a school, clinic, mine, port, barracks, parish, call centre, prison,
-   town hall, factory floor, fishing fleet, border post.
-2. ALREADY RECORDING. They film, photograph, record or write for mundane
-   reasons: school videographer, wedding filmer, parish archivist, union
-   newsletter, a tiny channel about their town, a diary.
-3. A TURN. Something in their world changed and they could not unsee it.
-   The story is under way now, not finished.
-4. A VOICE. In their own posts, letters or videos they are funny, angry,
-   tender, specific. You would follow this person for ninety minutes.
-5. WANTS TO TELL IT. This is the trait that matters most. They show, in
-   public and in their own name, that they want their story told.
-6. NOT YET IN THE INDUSTRY. Some video experience is welcome and often a good
-   sign: Pavel Talankin filmed school events for a living. Local recognition is
-   fine too: a town, regional or national prize, a local contest win. What rules
-   a person out is any international prize or award, or an established film or
-   media career: international festival credits, a production company, an
-   agent, a press team.
-7. NOWHERE. They live where nobody is looking: a small town, a periphery,
-   a language that film funds rarely read.
-8. RECORDING IS THE JOB. The strongest sign of all: the institution itself
-   hands them the camera or the pen. School media staff, hospital or town-hall
-   communications, a parish livestream operator, a factory safety inspector, a
-   union secretary, a court clerk. Their archive may already run for years.
-9. AN ORDER THEY OBJECTED TO. Pavel's story began with an instruction from
-   above. Look for a person who has publicly described a new rule, curriculum,
-   quota or script they were told to follow, and their unease about it.`;
+The model is Pavel Talankin, a school videographer in a small Russian town. When the war began he was told to film children reciting support for it. He saw a call for stories, answered with a long, angry letter, kept filming for two years, and the film won an Oscar. But the next person need not resemble him. What they share is this:
+
+1. A UNIQUE PERSPECTIVE. They see something from where they stand that almost
+   nobody else can show: from inside an institution, a job, a family, a street,
+   a profession, a community. Ordinary position, extraordinary view.
+2. DIFFICULT OR UNPRECEDENTED TIMES. Something large is happening around them
+   now: a war, a crackdown, a disaster, an epidemic, a collapse, a closure, a
+   mass departure, a sudden new rule, a change nobody there has lived through
+   before. The story is still under way.
+3. A VOICE. In their own posts, letters, recordings or interviews they are
+   funny, angry, tender, specific. You would follow them for ninety minutes.
+4. THEY WANT TO TELL IT. They already speak, post, write or film in their own
+   name, or have asked to be heard.
+5. THEY KEEP A RECORD. Video, photographs, diaries, voice notes, documents.
+   Strongest when recording is part of their job or routine and goes back years.
+6. NOT YET FOUND. Some film experience, local prizes and local press are fine.
+   Only international prize winners and established film or media
+   professionals are out.`;
 
 export const RUBRIC = {
-  access: 'Are they inside something outsiders cannot film?',
-  habit: 'Do they already record, for ordinary reasons?',
-  turn: 'Is something changing around them right now?',
+  perspective: 'Do they see this from a position almost nobody else can show?',
+  moment: 'Are they living through difficult or unprecedented times right now, with the story still under way?',
   voice: 'Is their own voice distinctive on the page or on camera?',
   drive: 'Do they visibly want to tell this story themselves?',
-  duty: 'Is recording part of their job or role, so the institution itself gives them the camera or the pen?',
-  order: 'Have they publicly described a recent instruction from above that they were uneasy about or objected to?',
-  undiscovered: 'Are they outside the film industry and the national press? (Amateur or workplace video experience and local prizes do not count against them; any international prize scores 0.)',
-}; // each scored 0-3; 24 is the ceiling
+  record: 'Do they already keep a record (video, photos, diaries, documents)? Highest when it is part of their job or goes back years.',
+  undiscovered: 'Are they still unknown to the film world and international press? (Local prizes, local press and amateur film experience do not count against them.)',
+}; // each scored 0-3; 18 is the ceiling
 
 export const LANES = {
+  'witnesses': 'First-hand accounts from people living through an upheaval right now: a war, flood, epidemic, closure, strike, crackdown or mass departure, told from where they stand.',
   'local-press': 'Regional and small-town news sites: profiles of ordinary workers who document their workplace, town or community.',
   'first-person': "Open letters, long first-person posts and essays published under the author's own name.",
   'institution-channels': 'Channels and pages run by an institution with a tiny audience (a school, parish, clinic, club, town hall), where the person behind the camera is credited or identifiable by their role.',
@@ -62,6 +52,8 @@ export const STORY_TYPES = {
   migration: 'Migration, borders, exile and displacement',
   justice: 'Courts, police, prisons and detention',
   government: 'Local government, elections, corruption and public services',
+  disaster: 'Disasters, epidemics and emergencies',
+  economy: 'Economic collapse, closures, debt and poverty',
   community: 'Faith, culture, tradition and community life',
   other: 'Anything else',
 };

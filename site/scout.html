@@ -60,6 +60,7 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 .lead h3 { font: 600 1.3rem/1.2 var(--display); letter-spacing: -.02em }
 .lead .who { color: var(--mute); margin: .15rem 0 .7rem }
 .lead p { max-width: 46em }
+.lead .pitch { font: 600 1.08rem/1.4 var(--display); letter-spacing: -.01em; margin-bottom: .5rem }
 .lead .quote { font: italic 400 1.15rem/1.4 var(--voice); margin-top: .7rem }
 .lead .check { margin-top: .7rem; padding-left: .8rem; border-left: 2px solid var(--ink); font-size: .93rem }
 .lead .traits { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .8rem; font: 400 .72rem/1.6 var(--code); letter-spacing: .06em; text-transform: uppercase; color: var(--mute) }
@@ -112,7 +113,7 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="queue">
     <h2>Review queue</h2>
-    <p class="note">Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
+    <p class="note">People with a unique perspective during difficult or unprecedented times. Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
     <div class="bar" id="filters"></div>
     <div class="bar">
       <label class="label" for="fCountry">Country</label><select id="fCountry"></select>
@@ -135,6 +136,9 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     </form>
     <p class="label">Where to look</p>
     <div class="lanes" id="lanes"></div>
+    <p class="label" style="margin-top:1.5rem">What is happening there (optional)</p>
+    <p class="note">Name an event or situation to stay with, such as "the 2026 floods in the south" or "teacher strikes". Leave empty to let the scout find what is happening.</p>
+    <div class="bar"><input type="text" id="event" maxlength="140" placeholder="An event or situation"></div>
     <p class="label" style="margin-top:1.5rem">Type of story</p>
     <p class="note">Leave all unticked to look for any kind of story.</p>
     <div class="grid" id="types"></div>
@@ -154,9 +158,9 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="intros" hidden>
     <h2>Introductions</h2>
-    <p class="note">Proposes pairs in different countries who would recognise something in each other. Uses everyone in the queue at or above the score you set (out of 24), except those you passed on.</p>
+    <p class="note">Proposes pairs in different countries who would recognise something in each other. Uses everyone in the queue at or above the score you set (out of 18), except those you passed on.</p>
     <div class="bar">
-      <label class="label" for="min">Minimum score</label><input type="number" id="min" min="0" max="24" value="14">
+      <label class="label" for="min">Minimum score</label><input type="number" id="min" min="0" max="18" value="11">
       <button class="act" id="propose">Propose introductions</button><span class="msg" id="introMsg" role="status"></span>
     </div>
     <div id="introList"></div>
@@ -219,6 +223,7 @@ async function refresh() {
   $("lettersMsg").textContent = data.unreadLetters ? data.unreadLetters + " new" : "No new letters.";
 }
 const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Organisations"], ["all", "Everything"]];
+const scaled = l => l.total / ((Object.keys(l.scores || {}).length || 6) * 3);
 const typeName = id => ((config.storyTypes || {})[id] || "").split(",")[0] || "Other";
 const inView = (l, id) => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id;
 const narrowed = () => data.leads.filter(l => (!$("fCountry").value || l.country === $("fCountry").value) && (!$("fType").value || (l.story_type || "other") === $("fType").value));
@@ -230,7 +235,7 @@ function fillSelect(sel, any, options) {
 $("fCountry").addEventListener("change", renderQueue); $("fType").addEventListener("change", renderQueue);
 function shown() {
   return narrowed().filter(l => inView(l, filter))
-    .sort((a, b) => b.total - a.total || (b.found || "").localeCompare(a.found || ""));
+    .sort((a, b) => scaled(b) - scaled(a) || (b.found || "").localeCompare(a.found || ""));
 }
 function renderQueue() {
   fillSelect($("fCountry"), "All countries", [...new Set(data.leads.map(l => l.country).filter(Boolean))].sort().map(c => [c, c]));
@@ -252,6 +257,8 @@ function card(l) {
   const b = el("div");
   b.append(el("h3", "", l.name || "Unnamed"));
   b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane === "intermediaries" ? "organisation" : l.lane, l.kind === "person" ? typeName(l.story_type || "other").toLowerCase() : ""].filter(Boolean).join(" · ")));
+  if (l.pitch) b.append(el("p", "pitch", l.pitch));
+  if (l.moment) b.append(el("p", "who", "The times: " + l.moment));
   b.append(el("p", "", l.story));
   if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
   if (l.cautions) b.append(el("p", "check", "Check first: " + l.cautions));
@@ -319,11 +326,11 @@ function buildSearch() {
   $("search").addEventListener("change", showPlan); showPlan();
 }
 function plan() {
-  const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), types = [...$("types").querySelectorAll("input:checked")].map(i => i.value), out = [];
+  const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), types = [...$("types").querySelectorAll("input:checked")].map(i => i.value), event = $("event").value.trim(), out = [];
   [...$("countries").querySelectorAll("input:checked")].forEach(i => {
     const r = config.regions.find(x => x.country === i.value);
     const risky = (config.highRisk || []).some(c => c.toLowerCase() === r.country.toLowerCase());
-    r.languages.forEach(language => (risky ? ["intermediaries", ...lanes] : lanes).forEach(lane => out.push({ country: r.country, language, lane, types })));
+    r.languages.forEach(language => (risky ? ["intermediaries", ...lanes] : lanes).forEach(lane => out.push({ country: r.country, language, lane, types, event })));
   });
   return out;
 }

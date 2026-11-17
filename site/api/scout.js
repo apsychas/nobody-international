@@ -91,7 +91,9 @@ const LEAD = obj({
   name: str('Public name or handle exactly as they publish it'),
   place: str('Town or region'),
   role: str("Their job or role, e.g. 'school events coordinator'"),
-  story: str('Two or three sentences in English: what they are inside of, and what is changing'),
+  story: str('Two or three sentences in English: what they see from where they stand, and what is happening around them'),
+  moment: str('In a few words: the difficult or unprecedented time they are living through, e.g. "school closures after the 2025 floods"'),
+  pitch: str('One sentence in English: why this person could carry a film'),
   in_their_words: str('A short quotation in the original language, or empty'),
   sources: { type: 'array', items: { type: 'string' }, description: 'Public URLs the claims come from' },
   scores: obj(Object.fromEntries(TRAITS.map((t) => [t, { type: 'integer', description: `0-3. ${RUBRIC[t]}` }]))),
@@ -137,16 +139,18 @@ const QUESTIONS = obj({
 
 const QUESTION_SYSTEM = `You write open questions for Nobody International, a documentary initiative. Pavel Talankin, a school videographer in Russia, was not found by a search: he saw a question, and answered it with a long, angry letter. We want to ask questions like that one.
 
+We are looking for people with a unique perspective during difficult or unprecedented times.
+
 Write three different questions for people in the job and country given. Each question:
 - is one sentence a person in that job would stop scrolling for, because only an insider could answer it;
 - is about what they themselves see, do or have been told to do, never asking them to name or expose colleagues, patients, pupils or anyone else;
 - does not mention films, prizes or money, and promises nothing;
 - is written the way people in that job actually talk in that language, not translated from English.
-Make the three differ in angle: one about what has changed, one about what they record or keep, one about what nobody outside would believe.`;
+Make the three differ in angle: one about what has changed in these times, one about what they record or keep, one about what nobody outside would believe.`;
 
 const RUBRIC_TEXT = TRAITS.map((t) => `- ${t}: ${RUBRIC[t]}`).join('\n');
 
-const SCOUT_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people who have a story only they can tell and want to tell it, before the film world has found them.
+const SCOUT_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people with a unique perspective during difficult or unprecedented times, before the film world has found them.
 
 ${ARCHETYPE}
 
@@ -154,10 +158,11 @@ Rules
 - Search in the language you are given, using the words a local would use. Do not search in English unless English is the language given.
 - Only people who have already chosen to publish under their own name or handle. Never infer identities, never combine sources to unmask anyone, never collect contact details, addresses, family members or employers beyond what the person states publicly.
 - No minors.
-- Cast a wide net. The traits above are for scoring, not for ruling people out: report every person who has an interesting story from inside something and some sign they might tell it, including partial fits and people you have doubts about. People will do the filtering later. Aim for eight to twelve people per search, and use every search you are given, varying the wording each time.
+- Cast a wide net. The traits above are for scoring, not for ruling people out: report every person who has a perspective of their own on difficult or unprecedented times and some sign they might tell it, including partial fits and people you have doubts about. People will do the filtering later. Aim for eight to twelve people per search, and use every search you are given, varying the wording each time.
 - Leave out only two kinds of person: anyone who has won an international prize or award, and established film or media professionals. Everyone else stays in. If someone has had national press coverage, a local prize or some film experience, include them and say so.
 - For each person, state your doubts plainly in what a human should check. Never drop someone because of a doubt.
-- For each find give: public name, place, role, what they are inside of, what is changing, one short quotation in the original language, the URLs, and what a human should check before contact.`;
+- Start from what is happening in this country now and in the last few years, nationally and in small places, then look for the people living it. If you are given an event or situation, stay with it.
+- For each find give: public name, place, role, what they see from where they stand, what difficult or unprecedented thing is happening around them, why this could be a film, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 
 const RISK_RULES = `
 
@@ -198,11 +203,14 @@ async function run(body) {
   // In higher-risk countries the page runs an organisations search first
   // ('intermediaries'), then the ordinary searches for people.
   const risky = isHighRisk(country), orgs = lane === 'intermediaries';
+  const event = String(body.event || '').trim();
+  if (event && !/^[\p{L}\p{M}\p{N}' .(),&/:-]{2,140}$/u.test(event)) throw fail(400, 'Describe the event in plain words, without symbols.');
   const types = (Array.isArray(body.types) ? body.types : []).filter((t) => STORY_TYPES[t] && t !== 'other');
   if (!orgs && !LANES[lane]) throw fail(400, 'Unknown lane.');
   const deadline = Date.now() + BUDGET_MS;
   const prompt = `Country: ${country}. Language to search in: ${language}.` +
     (orgs ? '' : `\nWhere to look this time: ${LANES[lane]}`) +
+    (event ? `\nThe event or situation to look into: ${event}` : '') +
     (types.length ? `\nOnly these kinds of story this time: ${types.map((t) => STORY_TYPES[t]).join('; ')}. Leave out anything else.` : '');
   const notes = await research(orgs ? RELAY_SYSTEM : SCOUT_SYSTEM + (risky ? RISK_RULES : ''), prompt, Math.max(1, Math.min(10, searches)), deadline);
   if (!notes.trim()) return { found: 0, added: 0 };
@@ -239,7 +247,7 @@ async function intake() {
       JSON.stringify(letter), LEADS);
     const raw = parsed?.leads?.[0] || {
       name: letter.name, place: letter.location, role: letter.role, story: 'Could not be read automatically. Open the letter.',
-      in_their_words: '', sources: [], scores: {}, themes: [], story_type: 'other', cautions: 'Not scored.',
+      in_their_words: '', sources: [], scores: {}, themes: [], story_type: 'other', moment: '', pitch: '', cautions: 'Not scored.',
     };
     const id = hash(blob.pathname);
     await writeJson(`scout/leads/${id}.json`, finish(raw, {
@@ -256,11 +264,11 @@ async function intake() {
 async function match({ min = 12 }) {
   const leads = await readAll('scout/leads/');
   const people = leads
-    .filter((l) => l.kind === 'person' && l.total >= min && l.status !== 'passed')
-    .map(({ name, country, role, story, themes }) => ({ name, country, role, story, themes }));
+    .filter((l) => l.kind === 'person' && l.status !== 'passed' && (l.total / ((Object.keys(l.scores || {}).length || TRAITS.length) * 3)) * 18 >= min)
+    .map(({ name, country, role, story, themes, moment }) => ({ name, country, role, story, themes, moment }));
   if (people.length < 2) return { proposed: 0, added: 0, people: people.length };
   const parsed = await structure(
-    'These people each have a story and do not know each other. Propose introductions between pairs in DIFFERENT countries who would recognise something in each other: the same kind of institution, the same turn, or two halves of one story. Quality over coverage; an obvious topical overlap is not enough. Use names exactly as given.',
+    'These people each have a story and do not know each other. Propose introductions between pairs in DIFFERENT countries who would recognise something in each other: the same vantage point, the same kind of upheaval, or two halves of one story. Quality over coverage; an obvious topical overlap is not enough. Use names exactly as given.',
     JSON.stringify(people), INTROS);
   const existing = new Set((await listAll('scout/intros/')).map((b) => b.pathname));
   let added = 0;
