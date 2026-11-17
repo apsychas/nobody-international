@@ -4,7 +4,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { put, get, list } from '@vercel/blob';
 import { createHash, timingSafeEqual, randomBytes } from 'node:crypto';
-import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS, STORY_TYPES } from '../lib/brief.js';
+import { ARCHETYPE, RUBRIC, LANES, DEFAULT_LANES, HIGH_RISK, REGIONS, STORY_TYPES, MISSION, UNSEEN_MAP } from '../lib/brief.js';
 
 // With ANTHROPIC_API_KEY set, calls go straight to Anthropic. Without it they go
 // through Vercel AI Gateway, signed by the project's own identity token and
@@ -88,6 +88,7 @@ async function structure(system, content, schema) {
 const obj = (properties) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
 const str = (description) => ({ type: 'string', description });
 const LEAD = obj({
+  entity: { type: 'string', enum: ['person', 'organisation'], description: 'person for an individual; organisation for a collective, group, outlet or project' },
   name: str('Public name or handle exactly as they publish it'),
   place: str('Town or region'),
   role: str("Their job or role, e.g. 'school events coordinator'"),
@@ -140,18 +141,19 @@ const QUESTIONS = obj({
 
 const QUESTION_SYSTEM = `You write open questions for Nobody International, a documentary initiative. Pavel Talankin, a school videographer in Russia, was not found by a search: he saw a question, and answered it with a long, angry letter. We want to ask questions like that one.
 
-We are looking for people with a unique perspective during difficult or unprecedented times.
+${MISSION} We are looking for people the world prefers not to see, with a unique perspective during difficult or unprecedented times.
 
-Write three different questions for people in the job and country given. Each question:
+Write three different questions for people in the job, group or situation and the country given. Each question:
 - is one sentence a person in that job would stop scrolling for, because only an insider could answer it;
 - is about what they themselves see, do or have been told to do, never asking them to name or expose colleagues, patients, pupils or anyone else;
+- never asks anyone to reveal their legal status, health, record or anything else that could harm them if seen;
 - does not mention films, prizes or money, and promises nothing;
 - is written the way people in that job actually talk in that language, not translated from English.
 Make the three differ in angle: one about what has changed in these times, one about what they record or keep, one about what nobody outside would believe.`;
 
 const RUBRIC_TEXT = TRAITS.map((t) => `- ${t}: ${RUBRIC[t]}`).join('\n');
 
-const SCOUT_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people with a unique perspective during difficult or unprecedented times, before the film world has found them.
+const SCOUT_SYSTEM = `You are a scout for Nobody International. ${MISSION} We look for people the world prefers not to see, with a unique perspective during difficult or unprecedented times, before the film world has found them, and we want to find and uplift their voices.
 
 ${ARCHETYPE}
 
@@ -164,6 +166,10 @@ Rules
 - For each person, state your doubts plainly in what a human should check. Never drop someone because of a doubt.
 - A person quoted once in a news report is a starting point, not a find. For each one, search again for their own page, channel, posts or interviews, and report what they say and keep in their own name. Rank people who tell their own story above people a reporter spoke for. If you find nothing of their own, include them and say so.
 - Start from what is happening in this country now and in the last few years, nationally and in small places, then look for the people living it. If you are given an event or situation, stay with it.
+- Look first where the world looks away (the map above). In every country ask: who here is avoided, blamed, hidden or forgotten? Whose crisis did the news leave? When a group speaks its own language (a minority or Indigenous language), also search in that language if you can.
+- Many of these people speak through a group of their own: a waste pickers' cooperative, a street paper, a camp radio, a prisoners' writing group, an Indigenous media collective. Report the group as an organisation, and report as a person any member who speaks publicly in their own name.
+- Some of these people are at risk if seen: undocumented people, people in detention, people in stigmatised work or with a stigmatised illness, survivors of violence. Name such a person only if they already speak publicly, under their own name, about this very subject; otherwise report the group that represents them instead. Never give a location more precise than a town or region. In what a human should check, say what being seen could cost them.
+- We uplift; we never expose. Rank people who act, record, organise, argue and joke above people shown only as victims.
 - For each find give: public name, place, role, what they see from where they stand, what difficult or unprecedented thing is happening around them, why this could be a film, where they speak or post in their own name (a URL, or 'not found'), what record they keep, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 
 const RISK_RULES = `
@@ -206,7 +212,7 @@ async function run(body) {
   // ('intermediaries'), then the ordinary searches for people.
   const risky = isHighRisk(country), orgs = lane === 'intermediaries';
   const event = String(body.event || '').trim();
-  if (event && !/^[\p{L}\p{M}\p{N}' .(),&/:-]{2,140}$/u.test(event)) throw fail(400, 'Describe the event in plain words, without symbols.');
+  if (event && !EVENT.test(event)) throw fail(400, 'Describe the event in plain words, without symbols.');
   const types = (Array.isArray(body.types) ? body.types : []).filter((t) => STORY_TYPES[t] && t !== 'other');
   if (!orgs && !LANES[lane]) throw fail(400, 'Unknown lane.');
   const deadline = Date.now() + BUDGET_MS;
@@ -217,7 +223,7 @@ async function run(body) {
   const notes = await research(orgs ? RELAY_SYSTEM : SCOUT_SYSTEM + (risky ? RISK_RULES : ''), prompt, Math.max(1, Math.min(10, searches)), deadline);
   if (!notes.trim()) return { found: 0, added: 0 };
   const parsed = await structure(
-    'Convert these scouting notes into records: one record for every person or organisation named in them, including those the scout had doubts about or scored low. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
+    'Convert these scouting notes into records: one record for every person or organisation named in them, including those the scout had doubts about or scored low. Mark each as a person or an organisation. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
       RUBRIC_TEXT + (orgs ? '\nThese are organisations: set every score to 0.' : ''),
     notes, LEADS);
   const existing = new Set((await listAll('scout/leads/')).map((b) => b.pathname));
@@ -227,8 +233,9 @@ async function run(body) {
     const id = hash(`${raw.name.toLowerCase()}|${country}`);
     const pathname = `scout/leads/${id}.json`;
     if (existing.has(pathname)) continue;
-    if (risky && !orgs) raw.cautions = `Higher-risk country: do not contact directly. Approach through a trusted organisation and take security advice first. ${raw.cautions || ''}`.trim();
-    await writeJson(pathname, finish(raw, { id, kind: orgs ? 'intermediary' : 'person', country, language, lane, origin: 'scout' }));
+    const kind = orgs || raw.entity === 'organisation' ? 'intermediary' : 'person';
+    if (risky && kind === 'person') raw.cautions = `Higher-risk country: do not contact directly. Approach through a trusted organisation and take security advice first. ${raw.cautions || ''}`.trim();
+    await writeJson(pathname, finish(raw, { id, kind, country, language, lane, origin: 'scout' }));
     added++;
   }
   return { found: parsed?.leads?.length || 0, added };
@@ -293,15 +300,76 @@ async function mark({ id, status }) {
   return { ok: true };
 }
 
+// ---- map of who the world looks away from, per country ----
+const EVENT = /^[\p{L}\p{M}\p{N}' .(),&/:-]{2,140}$/u;
+const cleanEvent = (s) => String(s || '').replace(/[^\p{L}\p{M}\p{N}' .(),&/:-]+/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+
+const UNSEEN_SYSTEM = `You work for Nobody International. ${MISSION} We want to find and uplift these voices.
+
+Map who the world prefers not to see in one country right now.
+
+${UNSEEN_MAP}
+
+Search in the language given and in English. Find eight to twelve specific situations in this country, current or still being lived with: a named group, place or event, never a general category. Include at least three that national or international news has stopped covering, and at least two outside the capital. For each give: a short title; who lives it; why the world looks away (stigma, distance, politics, discomfort, or the news moved on); since when; a plain search phrase in English to look for the people living it; the kind of story; what being seen could cost the people involved; and the URLs. Name no private individuals.`;
+
+const SITUATIONS = obj({
+  situations: {
+    type: 'array',
+    items: obj({
+      title: str('A short title naming the group, place or event'),
+      who: str('Who lives it, in one sentence'),
+      why_unseen: str('Why the world looks away, in one sentence'),
+      since: str('Since when, e.g. "2023" or "since the 2019 dam collapse"'),
+      event: str('A plain search phrase in English, under 120 characters: letters, numbers and basic punctuation only'),
+      story_type: { type: 'string', enum: Object.keys(STORY_TYPES), description: 'The one kind of story this is' },
+      risk: str('What being seen could cost the people involved, in one sentence'),
+      sources: { type: 'array', items: { type: 'string' }, description: 'Public URLs' },
+    }),
+  },
+});
+
+const mapPath = (country, language) => `scout/maps/${hash(`${country.toLowerCase()}|${language.toLowerCase()}`)}.json`;
+
+async function unseen(body) {
+  const country = String(body.country || '').trim(), language = String(body.language || '').trim();
+  if (!PLACE.test(country) || !PLACE.test(language)) throw fail(400, 'Enter a country and a language, in letters only.');
+  const path = mapPath(country, language);
+  if (!body.refresh) {
+    const saved = await readJson(path).catch(() => null);
+    if (saved) return { ...saved, cached: true };
+  }
+  if (!direct() && !gatewayToken) throw fail(503, 'No AI access: add ANTHROPIC_API_KEY in the Vercel project settings, then redeploy.');
+  const notes = await research(UNSEEN_SYSTEM, `Country: ${country}. Language: ${language}.`, 8, Date.now() + BUDGET_MS - 40_000);
+  if (!notes.trim()) throw fail(409, 'The map came back empty. Try again.');
+  const parsed = await structure('Convert these notes into records, one per situation. Invent nothing: leave a field empty rather than guess.', notes, SITUATIONS);
+  const situations = (parsed?.situations || [])
+    .map((s) => ({
+      ...s,
+      event: cleanEvent(s.event) || cleanEvent(s.title),
+      story_type: STORY_TYPES[s.story_type] ? s.story_type : 'other',
+      sources: (s.sources || []).filter((u) => /^https?:\/\//i.test(u)).slice(0, 4),
+    }))
+    .filter((s) => s.title && EVENT.test(s.event));
+  if (!situations.length) throw fail(409, 'The map came back empty. Try again.');
+  const map = { country, language, mapped: new Date().toISOString().slice(0, 10), situations };
+  await writeJson(path, map);
+  return map;
+}
+
+async function maps() {
+  const all = await readAll('scout/maps/');
+  return { maps: all.map(({ country, language, mapped, situations }) => ({ country, language, mapped, count: situations.length })).sort((a, b) => (b.mapped || '').localeCompare(a.mapped || '')) };
+}
+
 const WORDS = /^[\p{L}\p{M}' .(),&/-]{2,80}$/u;
 const questionPath = (code) => `scout/questions/${code}.json`;
 
 async function draft(body) {
   const country = String(body.country || '').trim(), language = String(body.language || '').trim(), job = String(body.job || '').trim();
-  if (!PLACE.test(country) || !PLACE.test(language) || !WORDS.test(job)) throw fail(400, 'Enter a country, a language and a kind of work, in letters only.');
+  if (!PLACE.test(country) || !PLACE.test(language) || !WORDS.test(job)) throw fail(400, 'Enter a country, a language and a job or group, in letters only.');
   const orgs = (await readAll('scout/leads/')).filter((l) => l.kind === 'intermediary' && l.country.toLowerCase() === country.toLowerCase()).map((l) => l.name).slice(0, 30);
   const parsed = await structure(QUESTION_SYSTEM,
-    `Country: ${country}\nLanguage: ${language}\nKind of work: ${job}\nOrganisations we already know there: ${orgs.length ? orgs.join('; ') : 'none yet'}`, QUESTIONS);
+    `Country: ${country}\nLanguage: ${language}\nJob, group or situation: ${job}\nOrganisations we already know there: ${orgs.length ? orgs.join('; ') : 'none yet'}`, QUESTIONS);
   if (!parsed?.questions?.length) throw fail(409, 'No questions came back. Try again.');
   return { country, language, job, ...parsed };
 }
@@ -343,11 +411,11 @@ async function note({ id, note: text }) {
 }
 
 const ACTIONS = {
-  note, questions, draft, saveQuestion, setQuestion,
+  unseen, maps, note, questions, draft, saveQuestion, setQuestion,
   config: async () => ({
     regions: REGIONS.map(([country, languages]) => ({ country, languages })),
     highRisk: [...HIGH_RISK],
-    lanes: LANES, rubric: RUBRIC, storyTypes: STORY_TYPES,
+    lanes: LANES, defaultLanes: DEFAULT_LANES, rubric: RUBRIC, storyTypes: STORY_TYPES,
   }),
   leads: async () => {
     const [leads, intros, letters] = await Promise.all([readAll('scout/leads/'), readAll('scout/intros/'), listAll('letters/')]);

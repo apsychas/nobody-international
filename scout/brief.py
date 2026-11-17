@@ -9,36 +9,51 @@ so the people running the project can edit it without touching the code.
 # in Karabash who already filmed everything, saw his job change, answered a
 # call for stories with a long angry letter, and wanted the story told.
 ARCHETYPE = """\
-We are looking for a person, not a film: someone with a unique perspective
+Nobody International makes films about people the world prefers not to see,
+told with them, from where they stand.
+
+We are looking for a person, not a film: someone the world prefers not to see,
+or who sees what the world prefers not to see, with a unique perspective
 during difficult or unprecedented times.
 
-1. A UNIQUE PERSPECTIVE. They see something from where they stand that almost
-   nobody else can show: from inside an institution, a job, a family, a street.
-2. DIFFICULT OR UNPRECEDENTED TIMES. Something large is happening around them
-   now: a war, a crackdown, a disaster, an epidemic, a collapse, a closure, a
-   sudden new rule. The story is still under way.
-3. A VOICE. In their own posts, letters or recordings they are funny, angry,
-   tender, specific. You would follow them for ninety minutes.
-4. THEY WANT TO TELL IT. They already speak, post, write or film in their own
-   name, or have asked to be heard.
-5. THEY KEEP A RECORD. Video, photographs, diaries, documents. Strongest when
-   recording is part of their job or goes back years.
-6. NOT YET FOUND. Some film experience, local prizes and local press are fine.
-   Only international prize winners and established film or media
-   professionals are out.
+1. UNSEEN. The world looks away from them, their place or what they live
+   through: stigma, distance, politics, discomfort, or the news came and left.
+2. A UNIQUE PERSPECTIVE. They see something from where they stand that almost
+   nobody else can show.
+3. DIFFICULT OR UNPRECEDENTED TIMES. A war, a crackdown, a disaster, a
+   collapse, a closure, an eviction, a sudden new rule, or its aftermath.
+4. A VOICE. Funny, angry, tender, specific in their own words.
+5. THEY WANT TO TELL IT, in their own name or through a group of their own.
+6. THEY KEEP A RECORD. Video, photographs, diaries, documents.
+7. NOT YET FOUND. Only international prize winners and established film or
+   media professionals are out.
+
+Where the world looks away: forgotten crises; closed places (prisons,
+detention centres, psychiatric wards, care homes, camps); work others will not
+look at (waste picking, sanitation, domestic work, slaughterhouses, morgues,
+sex work); people pushed to the edge (stateless, undocumented, homeless, Roma,
+Dalit, Indigenous, disabled, stigmatised illness or addiction, families of the
+disappeared); sacrifice zones beside mines, dams and dumps; and the wrong side
+of a story.
+
+We uplift; we never expose. Name a person at risk only if they already speak
+publicly under their own name on this subject; otherwise name their group.
 """
 
 RUBRIC = {
+    "unseen": "How much does the world look away from them, their place or what they live through?",
     "perspective": "Do they see this from a position almost nobody else can show?",
     "moment": "Are they living through difficult or unprecedented times right now?",
     "voice": "Is their own voice distinctive on the page or on camera?",
     "drive": "Do they visibly want to tell this story themselves?",
     "record": "Do they already keep a record (video, photos, diaries, documents)?",
     "undiscovered": "Are they still unknown to the film world and international press?",
-}  # each scored 0-3; 18 is the ceiling
+}  # each scored 0-3; 21 is the ceiling
 
 # Lanes are the kinds of public places such a person leaves traces.
 LANES = {
+    "self-told": "Street papers, refugee and camp media, prison writing and radio, participatory video, Indigenous and minority-language media, and worker collectives, where people the world looks away from speak for themselves.",
+    "after-the-news": "Places and people the news covered once and then left. Find who is still there, living with what happened.",
     "local-press": "Regional and small-town news sites: profiles of ordinary "
                    "workers who document their workplace, town or community.",
     "first-person": "Open letters, resignation letters, long first-person posts "

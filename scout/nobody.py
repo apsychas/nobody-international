@@ -33,6 +33,7 @@ client = anthropic.Anthropic()
 # ---------- shapes ----------------------------------------------------------
 
 class Scores(BaseModel):
+    unseen: int = Field(ge=0, le=3)
     perspective: int = Field(ge=0, le=3)
     moment: int = Field(ge=0, le=3)
     voice: int = Field(ge=0, le=3)
@@ -280,7 +281,7 @@ def main():
         rows = sorted((l for l in load(LEADS) if l["total"] >= a.min or l["kind"] == "intermediary"),
                       key=lambda l: -l["total"])
         for l in rows:
-            head = f"[{l['total']:>2}/18]" if l["kind"] == "person" else "[relay]"
+            head = f"[{l['total']:>2}/21]" if l["kind"] == "person" else "[relay]"
             print(f"{head} {l['name']} ({l['role']}, {l['place']}, {l['country']}) via {l['lane']}")
             print(f"        {l['story']}")
             if l["cautions"]:

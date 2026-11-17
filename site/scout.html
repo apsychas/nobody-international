@@ -80,6 +80,10 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 #log { margin-top: 1.25rem; font: 400 .85rem/1.7 var(--code); white-space: pre-wrap; border-top: 1px solid var(--rule); padding-top: 1rem }
 .intro { padding: 1.5rem 0; border-top: 1px solid var(--rule); max-width: 46em }
 .intro h3 { font: 600 1.25rem/1.25 var(--display); letter-spacing: -.02em; margin-bottom: .4rem }
+.mapbox { padding: 1.25rem 0 1.5rem; border-bottom: 1px solid var(--rule) }
+.qcard .check { padding-left: .8rem; border-left: 2px solid var(--ink); font-size: .93rem }
+.qcard .links { font-size: .88rem; display: grid; gap: .15rem; overflow-wrap: anywhere }
+.qcard .acts { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: .4rem }
 .qcard { padding: 1.5rem 0; border-top: 1px solid var(--rule); max-width: 50em; display: grid; gap: .5rem }
 .qcard h3 { font: 600 1.35rem/1.25 var(--display); letter-spacing: -.02em }
 .qcard code { font: 400 .9rem/1.5 var(--code); overflow-wrap: anywhere; user-select: all }
@@ -115,12 +119,12 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="queue">
     <h2>Review queue</h2>
-    <p class="note">People with a unique perspective during difficult or unprecedented times. Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
+    <p class="note">People the world prefers not to see, with a unique perspective during difficult or unprecedented times. Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
     <div class="bar" id="filters"></div>
     <div class="bar">
       <label class="label" for="fCountry">Country</label><select id="fCountry"></select>
       <label class="label" for="fType">Type of story</label><select id="fType"></select>
-      <label class="label" for="fSort">Order</label><select id="fSort"><option value="score">Best score first</option><option value="new">Newest first</option></select>
+      <label class="label" for="fSort">Order</label><select id="fSort"><option value="score">Best score first</option><option value="new">Newest first</option><option value="unseen">Most unseen first</option></select>
     </div>
     <div class="bar">
       <input type="text" id="fText" placeholder="Search names, stories and notes" maxlength="80">
@@ -131,6 +135,19 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="search" hidden>
     <h2>Search the public web</h2>
+    <div class="mapbox">
+      <p class="label">Start from who the world looks away from</p>
+      <p class="note">Map one country: the groups, places and forgotten events the world prefers not to see there now. Then search any of them for the people living it, in the places ticked under Where to look. A new map takes a few minutes and is saved.</p>
+      <form class="bar" id="mapForm">
+        <input type="text" id="mapCountry" placeholder="Country" maxlength="60" required>
+        <input type="text" id="mapLang" placeholder="Language" maxlength="60" required>
+        <button class="act" type="submit" id="mapGo">Map this country</button>
+      </form>
+      <div class="bar" id="mapSaved"></div>
+      <p class="msg" id="mapMsg" role="status"></p>
+      <div id="mapList"></div>
+    </div>
+    <p class="label" style="margin-top:2rem">Or search by country</p>
     <p class="note">Each run searches one country in one language in one kind of place. In higher-risk countries the scout first lists organisations that could carry an open call or make a safe introduction, then looks for people who are already public under their own name.</p>
     <div class="bar"><span class="label">Countries</span><span class="spacer"></span><button class="quiet" id="none">Clear</button></div>
     <div class="grid" id="countries"></div>
@@ -179,7 +196,7 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
     <form class="bar" id="qForm">
       <input type="text" id="qCountry" placeholder="Country" maxlength="60" required>
       <input type="text" id="qLang" placeholder="Language" maxlength="60" required>
-      <input type="text" id="qJob" placeholder="Kind of work, e.g. school staff" maxlength="80" required>
+      <input type="text" id="qJob" placeholder="Job or group, e.g. waste pickers" maxlength="80" required>
       <button class="act" type="submit" id="qDraft">Draft questions</button>
     </form>
     <p class="msg" id="qMsg" role="status"></p>
@@ -221,6 +238,7 @@ document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click",
   document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
   ["queue", "search", "letters", "intros", "questions"].forEach(t => $(t).hidden = t !== b.dataset.tab);
   if (b.dataset.tab === "questions") loadQuestions();
+  if (b.dataset.tab === "search") loadMaps();
 }));
 
 // ---- queue
@@ -231,7 +249,7 @@ async function refresh() {
 }
 const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Organisations"], ["all", "Everything"]];
 const scaled = l => l.total / ((Object.keys(l.scores || {}).length || 6) * 3);
-const typeName = id => ((config.storyTypes || {})[id] || "").split(",")[0] || "Other";
+const typeName = id => ((config.storyTypes || {})[id] || "").split(/[,:]/)[0] || "Other";
 const inView = (l, id) => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id;
 const hay = l => [l.name, l.role, l.place, l.country, l.story, l.pitch, l.moment, l.note, l.letter, (l.themes || []).join(" ")].join(" ").toLowerCase();
 const narrowed = () => { const t = $("fText").value.trim().toLowerCase(); return data.leads.filter(l => (!$("fCountry").value || l.country === $("fCountry").value) && (!$("fType").value || (l.story_type || "other") === $("fType").value) && (!t || hay(l).includes(t))); };
@@ -250,7 +268,7 @@ function fillSelect(sel, any, options) {
 $("fCountry").addEventListener("change", renderQueue); $("fType").addEventListener("change", renderQueue);
 function shown() {
   return narrowed().filter(l => inView(l, filter))
-    .sort((a, b) => $("fSort").value === "new" ? (b.found || "").localeCompare(a.found || "") || scaled(b) - scaled(a) : scaled(b) - scaled(a) || (b.found || "").localeCompare(a.found || ""));
+    .sort((a, b) => $("fSort").value === "unseen" ? ((b.scores || {}).unseen || 0) - ((a.scores || {}).unseen || 0) || scaled(b) - scaled(a) : $("fSort").value === "new" ? (b.found || "").localeCompare(a.found || "") || scaled(b) - scaled(a) : scaled(b) - scaled(a) || (b.found || "").localeCompare(a.found || ""));
 }
 function renderQueue() {
   fillSelect($("fCountry"), "All countries", [...new Set(data.leads.map(l => l.country).filter(Boolean))].sort().map(c => [c, c]));
@@ -334,13 +352,13 @@ function buildSearch() {
   config.regions.forEach(r => addCountryBox(r, false));
   const ls = $("lanes"); ls.textContent = "";
   Object.entries(config.lanes).forEach(([id, text]) => {
-    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.checked = true; box.id = "l-" + id;
-    const t = el("span"); t.append(el("b", "", id.replace("-", " ") + ". "), text); lab.append(box, t); ls.append(lab);
+    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.checked = !config.defaultLanes || config.defaultLanes.includes(id); box.id = "l-" + id;
+    const t = el("span"); t.append(el("b", "", id.replace(/-/g, " ") + ". "), text); lab.append(box, t); ls.append(lab);
   });
   const ts = $("types"); ts.textContent = "";
   Object.entries(config.storyTypes || {}).filter(([id]) => id !== "other").forEach(([id, text]) => {
     const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.id = "t-" + id; lab.title = text;
-    lab.append(box, el("span", "", text.split(",")[0])); ts.append(lab);
+    lab.append(box, el("span", "", text.split(/[,:]/)[0])); ts.append(lab);
   });
   $("search").addEventListener("change", showPlan); showPlan();
 }
@@ -356,8 +374,12 @@ function plan() {
 function showPlan() { const n = plan().length; $("plan").textContent = n ? n + (n === 1 ? " run" : " runs") + ", a few minutes each" : "Choose at least one country."; $("go").disabled = !n; }
 $("none").addEventListener("click", () => { $("countries").querySelectorAll("input").forEach(i => i.checked = false); showPlan(); });
 $("stop").addEventListener("click", () => { stopping = true; $("stop").textContent = "Stopping…"; });
-$("go").addEventListener("click", async () => {
-  const runs = plan(), log = $("log"); let total = 0;
+$("go").addEventListener("click", () => runBatch(plan()));
+let running = false;
+async function runBatch(runs) {
+  const log = $("log"); let total = 0;
+  if (!runs.length || running) return;
+  running = true;
   stopping = false; $("go").disabled = true; $("stop").hidden = false; $("stop").textContent = "Stop after this run"; log.hidden = false; log.textContent = "";
   for (let i = 0; i < runs.length && !stopping; i++) {
     const r = runs[i], line = el("div", "", (i + 1) + "/" + runs.length + "  " + r.country + " · " + r.language + " · " + (r.lane === "intermediaries" ? "organisations" : r.lane) + "  …"); log.append(line);
@@ -365,8 +387,51 @@ $("go").addEventListener("click", async () => {
     catch (err) { line.textContent = line.textContent.replace("…", "failed: " + err.message); if (err.status === 401 || err.status === 402 || err.status === 503) break; }
   }
   log.append(el("div", "", (stopping ? "Stopped. " : "Done. ") + total + " added to the queue."));
-  $("stop").hidden = true; showPlan(); refresh().catch(() => {});
-});
+  $("stop").hidden = true; running = false; showPlan(); refresh().catch(() => {});
+}
+
+// ---- map of who the world looks away from
+const isRisky = c => (config.highRisk || []).some(x => x.toLowerCase() === c.toLowerCase());
+async function loadMaps() {
+  try {
+    const { maps } = await api("maps"), bar = $("mapSaved"); bar.textContent = "";
+    if (!maps.length) return;
+    bar.append(el("span", "label", "Saved maps"));
+    maps.forEach(m => { const b = el("button", "quiet", m.country + " · " + m.language + " · " + m.mapped); b.type = "button"; b.addEventListener("click", () => showMap(m.country, m.language, false)); bar.append(b); });
+  } catch (e) {}
+}
+async function showMap(country, language, refresh) {
+  const m = $("mapMsg"), go = $("mapGo"); go.disabled = true;
+  m.textContent = refresh ? "Mapping " + country + " again. This takes a few minutes." : "Opening the map for " + country + ". If there is none yet, this takes a few minutes.";
+  try { renderMap(await api("unseen", { country, language, refresh })); m.textContent = ""; loadMaps(); }
+  catch (err) { m.textContent = err.message; }
+  go.disabled = false;
+}
+function renderMap(map) {
+  const box = $("mapList"); box.textContent = "";
+  const head = el("div", "bar"), again = el("button", "quiet", "Map again");
+  again.type = "button"; again.addEventListener("click", () => showMap(map.country, map.language, true));
+  head.append(el("span", "label", map.country + " · " + map.language + " · mapped " + map.mapped + " · " + map.situations.length + " situations"), again);
+  box.append(head);
+  map.situations.forEach(s => {
+    const c = el("article", "qcard");
+    c.append(el("h3", "", s.title), el("p", "", s.who), el("p", "who", "Why the world looks away: " + s.why_unseen), el("p", "who", [s.since ? "Since " + s.since.replace(/^since /i, "") : "", typeName(s.story_type).toLowerCase()].filter(Boolean).join(" · ")));
+    if (s.risk) c.append(el("p", "check", "Being seen could cost: " + s.risk));
+    const links = (s.sources || []).filter(u => /^https?:\/\//i.test(u));
+    if (links.length) { const k = el("div", "links"); links.forEach(u => { const a = el("a", "", u); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; k.append(a); }); c.append(k); }
+    const row = el("div", "acts"), b = el("button", "quiet", "Search this");
+    b.type = "button";
+    b.addEventListener("click", () => {
+      const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value);
+      if (!lanes.length) { b.textContent = "Tick at least one place to look below"; return; }
+      const runs = (isRisky(map.country) ? ["intermediaries", ...lanes] : lanes).map(lane => ({ country: map.country, language: map.language, lane, types: [], event: s.event }));
+      $("log").hidden = false; $("log").scrollIntoView({ behavior: "smooth", block: "start" });
+      runBatch(runs);
+    });
+    row.append(b, el("span", "label", "Searches for: " + s.event)); c.append(row); box.append(c);
+  });
+}
+$("mapForm").addEventListener("submit", e => { e.preventDefault(); const c = $("mapCountry").value.trim(), l = $("mapLang").value.trim(); if (c && l) showMap(c, l, false); });
 
 // ---- letters
 $("read").addEventListener("click", async () => {
