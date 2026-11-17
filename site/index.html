@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Nobody International finds people with a story to tell and puts Oscar-winning filmmakers and a community behind them."><style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Nobody International</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="You have a story. We help you tell it. Mentors, a film team and a community, from the Oscar-winning director of Mr. Nobody Against Putin."><style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Nobody International</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono&family=Newsreader:ital@1&display=swap">
 <style>
@@ -45,7 +45,13 @@ ol, ul { padding: 0; list-style: none }
 .sub b { font: 400 1.5rem/1.3 system-ui, sans-serif }
 .lede { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 1.5rem; margin-top: clamp(2.5rem, 7vw, 6rem) }
 .lede p { grid-column: 4 / -1; font: 500 clamp(1.5rem, 3.4vw, 2.75rem)/1.14 var(--display); letter-spacing: -.025em; max-width: 22em; text-wrap: balance }
-.lede .go { grid-column: 4 / -1; margin-top: 2rem; font-weight: 600 }
+.lede .support { font: 400 clamp(1.1rem, 1.7vw, 1.35rem)/1.45 var(--display); letter-spacing: 0; max-width: 34em; margin-top: 1.25rem; text-wrap: pretty }
+.lede .go { grid-column: 4 / -1; justify-self: start; margin-top: 2rem }
+.go { display: inline-block; font: 700 1rem/1 var(--display); letter-spacing: -.01em; text-decoration: none; color: var(--paper); background: var(--ink); border: 1px solid var(--ink); padding: 1.05rem 1.6rem }
+.go:hover { background: var(--paper); color: var(--ink) }
+.creds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem 1.5rem; margin-top: clamp(2.5rem, 6vw, 4.5rem); padding-top: 1.25rem; border-top: 1px solid var(--ink) }
+.creds li { font: 400 .75rem/1.5 var(--code); letter-spacing: .06em; text-transform: uppercase; color: var(--mute) }
+.creds b { display: block; font: 700 1.15rem/1.3 var(--display); letter-spacing: -.01em; text-transform: none; color: var(--ink) }
 
 /* sections */
 section { border-top: 1px solid var(--rule); padding-block: var(--gap) }
@@ -102,6 +108,7 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
 
 @media (max-width: 760px) {
   .lede p, .lede .go, .row > .label, .row > .body { grid-column: 1 / -1 }
+  .creds { grid-template-columns: 1fr }
   .gives, form { grid-template-columns: 1fr }
   .dates li { grid-template-columns: 1fr; gap: 0 }
 }
@@ -115,48 +122,53 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
   <header class="top">
     <a class="name" href="#top">Nobody International</a>
     <span class="tc" id="tc" aria-hidden="true">00:00:00:00</span>
-    <a href="#write">Write to us</a>
+    <a href="#write">Tell us your story</a>
   </header>
 
   <div class="hero" id="top">
     <h1>Nobody <span>International</span></h1>
     <div class="sub" id="sub" aria-hidden="true"><b lang="ru" id="word">Никто</b></div>
     <div class="lede">
-      <p>The next great documentary is being lived right now by someone who wants to tell it. We find them, put Oscar-winning filmmakers and a community behind them, and help them tell it themselves.</p>
-      <a class="go" href="#write">Write to us ↓</a>
+      <p>You have a story. We help you tell it.</p>
+      <p class="support">Mentors, a film team and a community for people whose stories are not being told. From the Oscar-winning director of <i>Mr. Nobody Against Putin</i>.</p>
+      <a class="go" href="#write">Tell us your story</a>
     </div>
+    <ul class="creds" aria-label="Awards for Mr. Nobody Against Putin">
+      <li><b>Academy Award</b>Best Documentary Feature, 2026</li>
+      <li><b>BAFTA</b>Best Documentary, 2026</li>
+      <li><b>Sundance</b>Special Jury Award, 2025</li>
+    </ul>
   </div>
 </div>
 
 <section>
   <div class="wrap row">
-    <p class="label">Where this comes from</p>
+    <p class="label">The proof</p>
     <div class="body">
-      <h2>It started with an angry letter from a school in the Urals.</h2>
-      <p>Pavel Talankin ran school events and filmed the assemblies at a primary school in Karabash, a copper-smelting town in Russia. After the invasion of Ukraine his job changed. He was told to film children reciting support for the war and send the footage up the chain as proof.</p>
-      <p>He planned to resign. Then he answered a call for stories with a long, furious letter. It was forwarded from one person to the next until it reached David Borenstein, a filmmaker in Copenhagen. Pavel withdrew his resignation and kept the camera running for two years.</p>
+      <h2>A school videographer sent one angry letter. His film won the Oscar.</h2>
+      <p>Pavel Talankin filmed school events in Karabash, a small town in Russia. When the war in Ukraine began, he was told to film children reciting support for it.</p>
+      <p>He wrote a furious letter. It reached director David Borenstein. Pavel kept filming for two years.</p>
       <ol class="dates">
-        <li><time>2022</time><span>War lessons arrive at Karabash School No. 1. Pavel starts keeping what he films.</span></li>
-        <li><time>June 2024</time><span>He leaves Russia carrying the footage.</span></li>
-        <li><time>January 2025</time><span><i>Mr. Nobody Against Putin</i> premieres at Sundance and wins a Special Jury Award.</span></li>
-        <li><time>February 2026</time><span>BAFTA for Best Documentary.</span></li>
-        <li><time>15 March 2026</time><span>Academy Award for Best Documentary Feature.</span></li>
+        <li><time>2022</time><span>Pavel starts keeping what he films at school.</span></li>
+        <li><time>2024</time><span>He leaves Russia with the footage.</span></li>
+        <li><time>2025</time><span><i>Mr. Nobody Against Putin</i> opens at Sundance and wins a Special Jury Award.</span></li>
+        <li><time>2026</time><span>It wins the BAFTA and the Academy Award.</span></li>
       </ol>
-      <p class="voice">Nobody went looking for Pavel. His letter happened to reach the right person. We exist so the next one doesn't depend on luck.</p>
+      <p class="voice">Pavel was found by luck. We exist so that you don't need luck.</p>
     </div>
   </div>
 </section>
 
 <section>
   <div class="wrap row">
-    <p class="label">Who we are looking for</p>
+    <p class="label">Who we look for</p>
     <div class="body">
-      <h2>You may be a nobody.</h2>
+      <h2>Is this you?</h2>
       <ul class="signs">
-        <li>You are inside a place cameras don't go.<small>A school, a hospital ward, a mine, a port, a barracks, a town hall.</small></li>
-        <li>Something around you has changed and you can't stop noticing.<small>It is still happening.</small></li>
-        <li>You want to tell it yourself.<small>That matters more than anything else on this list.</small></li>
-        <li>You may already hold a camera. You may not.<small>Pavel filmed school assemblies for a living. Some experience helps, none is required, and you need no equipment and no English.</small></li>
+        <li>You are inside a place cameras do not go.<small>A school, a hospital, a mine, a port, an army base, a town hall.</small></li>
+        <li>Something there is changing, and you see it.<small>It is happening now.</small></li>
+        <li>You want to tell the story yourself.<small>This matters most.</small></li>
+        <li>You need no experience, no equipment and no English.<small>Some people already film, like Pavel did. Some have never held a camera.</small></li>
       </ul>
     </div>
   </div>
@@ -166,13 +178,14 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
   <div class="wrap row">
     <p class="label">What you get</p>
     <div class="body">
-      <h2>You bring the story. We bring the people who know how to tell one.</h2>
+      <h2>You bring the story. We bring the people who know how to tell it.</h2>
       <div class="gives">
-        <div><h3>Mentors</h3><p>Oscar-winning directors, cinematographers, editors and producers, working with you one to one. They teach what they know: how to shoot, how to find the film inside the footage, how to protect it and yourself.</p></div>
-        <div><h3>A team</h3><p>When your story is ready, experienced people join you: an editor, a producer, a co-director if you want one. It stays your story. Pavel is credited as co-director of his film, and he holds the Oscar for it.</p></div>
-        <div><h3>An audience</h3><p>Introductions to the funds, broadcasters and festivals that carried one school videographer's footage from Karabash to the Academy Awards.</p></div>
-        <div><h3>Your terms</h3><p>Write, speak and film in the language you think in; translation is our job. You decide what is shared, with whom, and when. We publish no name without consent.</p></div>
+        <div><h3>Mentors</h3><p>Oscar-winning directors, cinematographers, editors and producers. They work with you one to one.</p></div>
+        <div><h3>A team</h3><p>An editor, a producer, and a co-director if you want one. The story stays yours.</p></div>
+        <div><h3>An audience</h3><p>Introductions to the funds, broadcasters and festivals that took Pavel's film to the Oscars.</p></div>
+        <div><h3>Control</h3><p>You decide what is shared, with whom, and when. We never publish your name without your consent.</p></div>
       </div>
+      <p><a class="go" href="#write">Tell us your story</a></p>
     </div>
   </div>
 </section>
@@ -181,22 +194,21 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
   <div class="wrap row">
     <p class="label">The community</p>
     <div class="body">
-      <h2>You stop being the only one.</h2>
-      <p>Most people with a story like this carry it alone. Here you meet others doing the same thing somewhere else: a teacher in one country, a nurse in another, a dock worker in a third. They understand without explanation. They watch your footage and tell you what they see. They notice if you go quiet.</p>
-      <p>Together you are also harder to ignore. One story from one town can be waved away. A hundred of them, in many languages, are a record.</p>
-      <p class="voice">A nobody is more powerful than you think. A few hundred of them, more so.</p>
-      <p>Filmmakers, funders, festivals and translators: there is a place for you too. Say so in your letter.</p>
+      <h2>You are not the only one.</h2>
+      <p>You will meet people doing the same thing in other countries: a teacher, a nurse, a dock worker. They understand you without a long explanation. They watch your footage and tell you what they see.</p>
+      <p class="voice">One story can be ignored. A hundred cannot.</p>
+      <p>Are you a filmmaker, funder, festival or translator? Write to us too.</p>
     </div>
   </div>
 </section>
 
 <section>
   <div class="wrap row">
-    <p class="label">David Borenstein</p>
+    <p class="label">Who we are</p>
     <div class="body">
-      <h2>Founded by the director of <i>Mr. Nobody Against Putin</i>.</h2>
-      <p>David Borenstein is an American documentary filmmaker who lives and works in Copenhagen. He began in radio, then spent years in China, where he made his first feature, <i>Dream Empire</i>.</p>
-      <p>He directed <i>Mr. Nobody Against Putin</i> with Pavel Talankin as co-director. In March 2026 it won the Academy Award for Best Documentary Feature, the first Oscar for both of them. Accepting it, David said that even a nobody is more powerful than you think.</p>
+      <h2>Led by an Oscar-winning director.</h2>
+      <p>David Borenstein directed <i>Mr. Nobody Against Putin</i>, with Pavel Talankin as co-director. In 2026 it won the Academy Award and the BAFTA for best documentary.</p>
+      <p>David is an American filmmaker based in Copenhagen.</p>
       <ul class="films">
         <li><span>2016</span><em>Dream Empire</em></li>
         <li><span>2024</span><em>Can't Feel Nothing</em></li>
@@ -210,22 +222,22 @@ footer { padding-block: 2rem 3rem; display: flex; flex-wrap: wrap; justify-conte
   <div class="wrap row">
     <p class="label">Write to us</p>
     <div class="body">
-      <h2>Send a letter. Any length, any language.</h2>
-      <p class="hint">Tell us where you are and what you see. If you are not the nobody but know one, or want to help, tell us that. Write only what is safe for you to write here.</p>
+      <h2>Tell us your story.</h2>
+      <p class="hint">Write in any language. A few lines are enough. We read every letter. Only write what is safe for you to write.</p>
       <form id="form" novalidate>
         <p hidden><label>Leave this empty <input name="company" tabindex="-1" autocomplete="off"></label></p>
-        <div class="f"><label for="name">Name, or a name you choose</label><input id="name" name="name" autocomplete="name" required></div>
+        <div class="f"><label for="name">Your name, or any name you choose</label><input id="name" name="name" autocomplete="name" required></div>
         <div class="f"><label for="location">Where you are</label><input id="location" name="location" placeholder="Town, country" required></div>
-        <div class="f"><label for="contact">How to reach you</label><input id="contact" name="contact" placeholder="Email or handle" autocomplete="email" required></div>
+        <div class="f"><label for="contact">How we can reach you</label><input id="contact" name="contact" placeholder="Email, phone or handle" autocomplete="email" required></div>
         <div class="f"><label for="role">I am</label>
           <select id="role" name="role">
             <option>Someone with a story</option>
-            <option>Someone who knows a nobody</option>
+            <option>Someone who knows a person with a story</option>
             <option>A filmmaker who wants to help</option>
             <option>A funder, festival or partner</option>
           </select></div>
-        <div class="f wide"><label for="letter">Your letter</label><textarea id="letter" name="letter" placeholder="Dear Nobody International," required></textarea></div>
-        <div class="send"><button type="submit" id="send">Send the letter</button><p id="status" role="status" aria-live="polite"></p></div>
+        <div class="f wide"><label for="letter">Your story</label><textarea id="letter" name="letter" placeholder="Where are you, and what do you see?" required></textarea></div>
+        <div class="send"><button type="submit" id="send">Send</button><p id="status" role="status" aria-live="polite"></p></div>
       </form>
     </div>
   </div>
@@ -277,14 +289,14 @@ form.addEventListener("submit", async e => {
   if (form.elements.company.value) return;              // a bot filled the hidden field
   const letter = read();
   const missing = ["name", "location", "contact", "letter"].find(k => !letter[k]);
-  if (missing) { status.textContent = "Please fill in every line, then send again."; form.elements[missing].focus(); return; }
+  if (missing) { status.textContent = "Please fill in every line."; form.elements[missing].focus(); return; }
   send.disabled = true; status.textContent = "Sending…";
   try {
     await deliver(letter);
-    form.reset(); status.textContent = "Received. A person will read it.";
+    form.reset(); status.textContent = "Received. Thank you. We will read it.";
     try { localStorage.removeItem(KEY); } catch (e) {}
   } catch (err) {
-    status.textContent = "Your letter could not be sent, so nothing has left this page. It is kept in this browser. Please try again in a moment.";
+    status.textContent = "Not sent. Your text is saved in this browser. Please try again.";
   }
   send.disabled = false;
 });
