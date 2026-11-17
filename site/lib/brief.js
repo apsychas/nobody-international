@@ -46,7 +46,6 @@ export const RUBRIC = {
 export const LANES = {
   'local-press': 'Regional and small-town news sites: profiles of ordinary workers who document their workplace, town or community.',
   'first-person': "Open letters, long first-person posts and essays published under the author's own name.",
-  'resignations': 'Resignation and farewell posts, and local petitions with a named author: people explaining in public why they are leaving a job or refusing an instruction.',
   'institution-channels': 'Channels and pages run by an institution with a tiny audience (a school, parish, clinic, club, town hall), where the person behind the camera is credited or identifiable by their role.',
   'small-channels': 'Very small video or audio channels (under ~20k followers) run by workers or residents documenting daily life from inside.',
   'community-archives': 'Village chroniclers, home-movie keepers, parish, union and school archivists, community radio hosts.',
