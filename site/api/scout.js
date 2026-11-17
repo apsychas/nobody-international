@@ -125,11 +125,19 @@ Rules
 - Prefer three real finds to ten weak ones. If you find nobody, say so.
 - For each find give: public name, place, role, what they are inside of, what is changing, one short quotation in the original language, the URLs, and what a human should check before contact.`;
 
+const RISK_RULES = `
+
+This country is higher-risk: being identified as someone with a critical story can cost a person their job, their freedom or their family's safety. Extra rules here:
+- Name a person only if they have already made themselves public, by their own choice and under their own name, on the very subject of their story. If in doubt, leave them out.
+- Never name anyone who writes anonymously or under a pseudonym, and never guess who is behind an account.
+- Prefer people who have already left the country or who speak with the backing of an organisation.
+- In what a human should check, say how exposed the person already is and which organisation could make a safe introduction.`;
+
 const RELAY_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people with a story only they can tell.
 
-In this country, being identified as someone with a critical story to tell can cost a person their job, their freedom or their family's safety. So here you do NOT look for individuals and you name no private person.
+In this search you do NOT look for individuals and you name no private person.
 
-Instead, find the trusted public intermediaries through whom an open call for stories could travel, so that people can choose to come to us: independent and exile media in the language, diaspora associations, teacher, medical and labour networks abroad, university departments, legal aid and press-freedom groups, community media trainers, film schools in exile. For each give: name, where it is based, who it reaches inside the country, why people trust it, the URL. Search in the language given.`;
+Find the trusted public intermediaries through whom an open call for stories could travel, so that people can choose to come to us, and through whom a safe introduction could be made: independent and exile media in the language, diaspora associations, teacher, medical and labour networks abroad, university departments, legal aid and press-freedom groups, community media trainers, film schools in exile. For each give: name, where it is based, who it reaches inside the country, why people trust it, the URL. Search in the language given.`;
 
 function finish(lead, extra) {
   const scores = Object.fromEntries(TRAITS.map((t) => [t, Math.max(0, Math.min(3, Number(lead.scores?.[t]) || 0))]));
@@ -152,16 +160,18 @@ async function run(body) {
   // Any country and language may be searched, not only those in the brief.
   const country = String(body.country || '').trim(), language = String(body.language || '').trim();
   if (!PLACE.test(country) || !PLACE.test(language)) throw fail(400, 'Enter a country and a language, in letters only.');
-  const risky = isHighRisk(country);
-  if (!risky && !LANES[lane]) throw fail(400, 'Unknown lane.');
+  // In higher-risk countries the page runs an organisations search first
+  // ('intermediaries'), then the ordinary searches for people.
+  const risky = isHighRisk(country), orgs = lane === 'intermediaries';
+  if (!orgs && !LANES[lane]) throw fail(400, 'Unknown lane.');
   const deadline = Date.now() + BUDGET_MS;
   const prompt = `Country: ${country}. Language to search in: ${language}.` +
-    (risky ? '' : `\nWhere to look this time: ${LANES[lane]}`);
-  const notes = await research(risky ? RELAY_SYSTEM : SCOUT_SYSTEM, prompt, Math.max(1, Math.min(10, searches)), deadline);
+    (orgs ? '' : `\nWhere to look this time: ${LANES[lane]}`);
+  const notes = await research(orgs ? RELAY_SYSTEM : SCOUT_SYSTEM + (risky ? RISK_RULES : ''), prompt, Math.max(1, Math.min(10, searches)), deadline);
   if (!notes.trim()) return { found: 0, added: 0 };
   const parsed = await structure(
     'Convert these scouting notes into records. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
-      RUBRIC_TEXT + (risky ? '\nThese are organisations: set every score to 0.' : ''),
+      RUBRIC_TEXT + (orgs ? '\nThese are organisations: set every score to 0.' : ''),
     notes, LEADS);
   const existing = new Set((await listAll('scout/leads/')).map((b) => b.pathname));
   let added = 0;
@@ -170,10 +180,8 @@ async function run(body) {
     const id = hash(`${raw.name.toLowerCase()}|${country}`);
     const pathname = `scout/leads/${id}.json`;
     if (existing.has(pathname)) continue;
-    await writeJson(pathname, finish(raw, {
-      id, kind: risky ? 'intermediary' : 'person', country, language,
-      lane: risky ? 'intermediaries' : lane, origin: 'scout',
-    }));
+    if (risky && !orgs) raw.cautions = `Higher-risk country: do not contact directly. Approach through a trusted organisation and take security advice first. ${raw.cautions || ''}`.trim();
+    await writeJson(pathname, finish(raw, { id, kind: orgs ? 'intermediary' : 'person', country, language, lane, origin: 'scout' }));
     added++;
   }
   return { found: parsed?.leads?.length || 0, added };
@@ -239,7 +247,7 @@ async function mark({ id, status }) {
 
 const ACTIONS = {
   config: async () => ({
-    regions: REGIONS.map(([country, languages]) => ({ country, languages, relaysOnly: HIGH_RISK.has(country) })),
+    regions: REGIONS.map(([country, languages]) => ({ country, languages })),
     highRisk: [...HIGH_RISK],
     lanes: LANES, rubric: RUBRIC,
   }),

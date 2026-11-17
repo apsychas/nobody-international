@@ -113,7 +113,7 @@ section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; marg
 
   <section id="search" hidden>
     <h2>Search the public web</h2>
-    <p class="note">Each run searches one country in one language in one kind of place. In countries marked "relays only" the scout names no individuals; it lists organisations that could carry an open call.</p>
+    <p class="note">Each run searches one country in one language in one kind of place. In higher-risk countries the scout first lists organisations that could carry an open call or make a safe introduction, then looks for people who are already public under their own name.</p>
     <div class="bar"><span class="label">Countries</span><span class="spacer"></span><button class="quiet" id="none">Clear</button></div>
     <div class="grid" id="countries"></div>
     <form class="bar" id="addForm">
@@ -189,7 +189,7 @@ async function refresh() {
   renderQueue(); renderIntros();
   $("lettersMsg").textContent = data.unreadLetters ? data.unreadLetters + " new" : "No new letters.";
 }
-const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Relays"], ["all", "Everything"]];
+const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Organisations"], ["all", "Everything"]];
 function shown() {
   return data.leads.filter(l => filter === "all" ? true : filter === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === filter)
     .sort((a, b) => b.total - a.total || (b.found || "").localeCompare(a.found || ""));
@@ -208,10 +208,10 @@ function renderQueue() {
 }
 function card(l) {
   const c = el("article", "lead");
-  const s = el("div", "score", l.kind === "person" ? String(l.total) : "–"); s.append(el("small", "", l.kind === "person" ? "of 18" : "relay")); c.append(s);
+  const s = el("div", "score", l.kind === "person" ? String(l.total) : "–"); s.append(el("small", "", l.kind === "person" ? "of 18" : "org")); c.append(s);
   const b = el("div");
   b.append(el("h3", "", l.name || "Unnamed"));
-  b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane].filter(Boolean).join(" · ")));
+  b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane === "intermediaries" ? "organisation" : l.lane].filter(Boolean).join(" · ")));
   b.append(el("p", "", l.story));
   if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
   if (l.cautions) b.append(el("p", "check", "Check first: " + l.cautions));
@@ -237,7 +237,7 @@ const CUSTOM = "scout-custom-countries", PLACE = /^[\p{L}\p{M}' .()-]{2,60}$/u;
 function saveCustom() { try { localStorage.setItem(CUSTOM, JSON.stringify(config.regions.filter(r => r.custom))); } catch (e) {} }
 function addCountryBox(r, checked) {
   const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = r.country; box.checked = !!checked; box.id = "c-" + r.country.replace(/\W/g, "");
-  const t = el("span", "", r.country + " "); if (r.relaysOnly) t.append(el("small", "", "relays only"));
+  const t = el("span", "", r.country + " ");
   lab.append(box, t);
   if (r.custom) {
     lab.title = r.languages.join(", ");
@@ -252,7 +252,7 @@ $("addForm").addEventListener("submit", e => {
   const country = $("addCountry").value.trim(), languages = [...new Set($("addLangs").value.split(",").map(s => s.trim()).filter(Boolean))], m = $("addMsg");
   if (!PLACE.test(country) || !languages.length || !languages.every(l => PLACE.test(l))) { m.textContent = "Use letters only: a country, then one or more languages separated by commas."; return; }
   if (config.regions.some(r => r.country.toLowerCase() === country.toLowerCase())) { m.textContent = country + " is already in the list."; return; }
-  const r = { country, languages, custom: true, relaysOnly: (config.highRisk || []).some(c => c.toLowerCase() === country.toLowerCase()) };
+  const r = { country, languages, custom: true };
   config.regions.push(r); addCountryBox(r, true); saveCustom(); showPlan();
   $("addCountry").value = ""; $("addLangs").value = ""; m.textContent = "Added " + country + " (" + languages.join(", ") + ").";
 });
@@ -261,7 +261,7 @@ function buildSearch() {
   try {
     JSON.parse(localStorage.getItem(CUSTOM) || "[]").forEach(r => {
       if (r && PLACE.test(r.country || "") && Array.isArray(r.languages) && r.languages.length && r.languages.every(l => PLACE.test(l)) && !config.regions.some(x => x.country.toLowerCase() === r.country.toLowerCase()))
-        config.regions.push({ country: r.country, languages: r.languages, custom: true, relaysOnly: (config.highRisk || []).some(c => c.toLowerCase() === r.country.toLowerCase()) });
+        config.regions.push({ country: r.country, languages: r.languages, custom: true });
     });
   } catch (e) {}
   config.regions.forEach(r => addCountryBox(r, false));
@@ -276,7 +276,8 @@ function plan() {
   const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), out = [];
   [...$("countries").querySelectorAll("input:checked")].forEach(i => {
     const r = config.regions.find(x => x.country === i.value);
-    r.languages.forEach(language => (r.relaysOnly ? ["intermediaries"] : lanes).forEach(lane => out.push({ country: r.country, language, lane })));
+    const risky = (config.highRisk || []).some(c => c.toLowerCase() === r.country.toLowerCase());
+    r.languages.forEach(language => (risky ? ["intermediaries", ...lanes] : lanes).forEach(lane => out.push({ country: r.country, language, lane })));
   });
   return out;
 }
@@ -287,7 +288,7 @@ $("go").addEventListener("click", async () => {
   const runs = plan(), log = $("log"); let total = 0;
   stopping = false; $("go").disabled = true; $("stop").hidden = false; $("stop").textContent = "Stop after this run"; log.hidden = false; log.textContent = "";
   for (let i = 0; i < runs.length && !stopping; i++) {
-    const r = runs[i], line = el("div", "", (i + 1) + "/" + runs.length + "  " + r.country + " · " + r.language + " · " + r.lane + "  …"); log.append(line);
+    const r = runs[i], line = el("div", "", (i + 1) + "/" + runs.length + "  " + r.country + " · " + r.language + " · " + (r.lane === "intermediaries" ? "organisations" : r.lane) + "  …"); log.append(line);
     try { const out = await api("run", r); total += out.added; line.textContent = line.textContent.replace("…", out.found + " found, " + out.added + " new"); }
     catch (err) { line.textContent = line.textContent.replace("…", "failed: " + err.message); if (err.status === 401 || err.status === 503) break; }
   }
