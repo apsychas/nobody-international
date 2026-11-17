@@ -50,7 +50,13 @@ Live at https://nobody-international.vercel.app (Vercel project
 - `package.json` — the one dependency the function needs.
 - `nobody-international.html` — the same page as previewed on claude.ai (not deployed).
 
-Read letters in the Vercel dashboard: Storage → nobody-letters. To feed them to
+- `scout.html` + `api/scout.js` + `lib/brief.js` — the private scout page at
+  `/scout`: search, read website letters, review queue, introductions. It needs
+  two environment variables in the Vercel project: `SCOUT_PASSWORD` (the page
+  password, 8+ characters) and `ANTHROPIC_API_KEY`. Leads are stored in the same
+  private Blob store under `scout/`.
+
+Read letters in the scout page, or raw in the Vercel dashboard: Storage → nobody-letters. To feed them to
 the scout, download them, combine into one JSON list and run
 `python scout/nobody.py intake letters.json`.
 

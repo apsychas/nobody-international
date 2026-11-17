@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "functions": { "api/scout.js": { "maxDuration": 300 } },
+  "headers": [
+    { "source": "/scout", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }
+  ]
+}

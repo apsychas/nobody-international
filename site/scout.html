@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Scout · Nobody International</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=IBM+Plex+Mono&family=Newsreader:ital@1&display=swap">
+<style>
+:root {
+  --paper: #ffffff; --ink: #0b0b0a; --mute: #6f6f6a; --rule: #d9d9d4; --field: #f3f3f0;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --voice: "Newsreader", Georgia, serif;
+  --code: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #060606; --ink: #f5f5f1; --mute: #8f8f89; --rule: #2b2b28; --field: #151514; color-scheme: dark }
+}
+* { box-sizing: border-box }
+[hidden] { display: none !important }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1rem/1.55 var(--display); -webkit-font-smoothing: antialiased }
+.wrap { max-width: 68rem; margin: 0 auto; padding: 0 20px 5rem }
+h1, h2, h3, p, ul { margin: 0 } ul { padding: 0; list-style: none }
+a { color: inherit; text-underline-offset: .2em }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+.label { font: 400 .72rem/1.4 var(--code); letter-spacing: .08em; text-transform: uppercase; color: var(--mute) }
+
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .75rem 2rem; padding: 1.25rem 0; border-bottom: 1px solid var(--ink) }
+header h1 { font: 800 1.4rem/1 var(--display); font-stretch: 112%; letter-spacing: -.03em; text-transform: uppercase }
+header h1 span { font: italic 400 1.3rem/1 var(--voice); text-transform: none; letter-spacing: 0 }
+nav { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem }
+nav button { all: unset; cursor: pointer; font-weight: 600; padding: .25rem 0; border-bottom: 2px solid transparent; color: var(--mute) }
+nav button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink) }
+nav button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px }
+
+button.act, .gate button { font: 700 .95rem/1 var(--display); color: var(--paper); background: var(--ink); border: 1px solid var(--ink); border-radius: 0; padding: .8rem 1.2rem; cursor: pointer }
+button.act:hover, .gate button:hover { background: var(--paper); color: var(--ink) }
+button.act:disabled { opacity: .45; cursor: default }
+button.quiet { font: 600 .85rem/1 var(--display); color: var(--ink); background: transparent; border: 1px solid var(--rule); border-radius: 0; padding: .5rem .75rem; cursor: pointer }
+button.quiet:hover, button.quiet[aria-pressed="true"] { border-color: var(--ink) }
+button.quiet[aria-pressed="true"] { background: var(--ink); color: var(--paper) }
+
+.gate { max-width: 24rem; margin: 18vh auto 0; display: grid; gap: 1rem }
+.gate h2 { font: 800 2.4rem/1 var(--display); font-stretch: 112%; letter-spacing: -.04em; text-transform: uppercase }
+input[type=password], input[type=number] { width: 100%; font: 400 1.05rem/1.4 var(--display); color: var(--ink); background: var(--field); border: 1px solid var(--rule); border-radius: 0; padding: .7rem .8rem }
+input[type=number] { width: 5rem }
+.note { color: var(--mute); font-size: .93rem; max-width: 44em }
+.msg { min-height: 1.5rem; font-size: .95rem }
+
+section { padding-top: 2rem }
+section > h2 { font: 600 1.9rem/1.1 var(--display); letter-spacing: -.03em; margin-bottom: .5rem }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: 1.25rem 0 }
+.bar .spacer { flex: 1 }
+
+.lead { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0 1.25rem; padding: 1.5rem 0; border-top: 1px solid var(--rule) }
+.lead .score { font: 800 2rem/1 var(--display); font-stretch: 112%; letter-spacing: -.04em; font-variant-numeric: tabular-nums }
+.lead .score small { display: block; font: 400 .72rem/1.6 var(--code); letter-spacing: .08em; color: var(--mute) }
+.lead h3 { font: 600 1.3rem/1.2 var(--display); letter-spacing: -.02em }
+.lead .who { color: var(--mute); margin: .15rem 0 .7rem }
+.lead p { max-width: 46em }
+.lead .quote { font: italic 400 1.15rem/1.4 var(--voice); margin-top: .7rem }
+.lead .check { margin-top: .7rem; padding-left: .8rem; border-left: 2px solid var(--ink); font-size: .93rem }
+.lead .traits { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-top: .8rem; font: 400 .72rem/1.6 var(--code); letter-spacing: .06em; text-transform: uppercase; color: var(--mute) }
+.lead .links { margin-top: .6rem; font-size: .88rem; display: grid; gap: .15rem; overflow-wrap: anywhere }
+.lead details { margin-top: .7rem } .lead summary { cursor: pointer; font-weight: 600; font-size: .93rem }
+.lead pre { white-space: pre-wrap; font: italic 400 1.1rem/1.5 var(--voice); margin: .6rem 0 0; max-width: 46em }
+.lead .acts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem }
+.empty { padding: 2.5rem 0; border-top: 1px solid var(--rule); color: var(--mute); max-width: 40em }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: .1rem 1.5rem; margin: .75rem 0 1.5rem }
+.grid label { display: flex; gap: .5rem; align-items: baseline; padding: .2rem 0; cursor: pointer }
+.grid small { color: var(--mute); font: 400 .68rem/1 var(--code); letter-spacing: .06em; text-transform: uppercase }
+.lanes label { display: flex; gap: .6rem; align-items: baseline; padding: .3rem 0; max-width: 48em; cursor: pointer }
+.lanes b { font-weight: 600 }
+#log { margin-top: 1.25rem; font: 400 .85rem/1.7 var(--code); white-space: pre-wrap; border-top: 1px solid var(--rule); padding-top: 1rem }
+.intro { padding: 1.5rem 0; border-top: 1px solid var(--rule); max-width: 46em }
+.intro h3 { font: 600 1.25rem/1.25 var(--display); letter-spacing: -.02em; margin-bottom: .4rem }
+.intro .q { font: italic 400 1.15rem/1.4 var(--voice); margin-top: .6rem }
+@media (max-width: 560px) { .lead { grid-template-columns: 1fr; gap: .5rem } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<form class="gate" id="gate" hidden>
+  <p class="label">Nobody International</p>
+  <h2>Scout</h2>
+  <label class="label" for="pw">Password</label>
+  <input type="password" id="pw" autocomplete="current-password" required>
+  <button type="submit">Open</button>
+  <p class="msg" id="gateMsg" role="status"></p>
+</form>
+
+<div id="app" hidden>
+  <header>
+    <h1>Nobody <span>Scout</span></h1>
+    <nav role="tablist">
+      <button role="tab" data-tab="queue" aria-selected="true">Queue</button>
+      <button role="tab" data-tab="search" aria-selected="false">Search</button>
+      <button role="tab" data-tab="letters" aria-selected="false">Letters</button>
+      <button role="tab" data-tab="intros" aria-selected="false">Introductions</button>
+      <button id="lock">Lock</button>
+    </nav>
+  </header>
+
+  <section id="queue">
+    <h2>Review queue</h2>
+    <p class="note">Every entry is a suggestion for a person to read. Nothing here has contacted anyone.</p>
+    <div class="bar" id="filters"></div>
+    <div id="leads"></div>
+  </section>
+
+  <section id="search" hidden>
+    <h2>Search the public web</h2>
+    <p class="note">Each run searches one country in one language in one kind of place. In countries marked "relays only" the scout names no individuals; it lists organisations that could carry an open call.</p>
+    <div class="bar"><span class="label">Countries</span><span class="spacer"></span><button class="quiet" id="none">Clear</button></div>
+    <div class="grid" id="countries"></div>
+    <p class="label">Where to look</p>
+    <div class="lanes" id="lanes"></div>
+    <div class="bar">
+      <button class="act" id="go">Run search</button>
+      <button class="quiet" id="stop" hidden>Stop after this run</button>
+      <span class="msg" id="plan"></span>
+    </div>
+    <div id="log" hidden></div>
+  </section>
+
+  <section id="letters" hidden>
+    <h2>Letters from the website</h2>
+    <p class="note">Reads letters sent through the site, translates them, and adds each to the review queue with a score. The original letter is kept with the entry.</p>
+    <div class="bar"><button class="act" id="read">Read new letters</button><span class="msg" id="lettersMsg" role="status"></span></div>
+  </section>
+
+  <section id="intros" hidden>
+    <h2>Introductions</h2>
+    <p class="note">Proposes pairs in different countries who would recognise something in each other. Uses everyone in the queue at or above the score you set, except those you passed on.</p>
+    <div class="bar">
+      <label class="label" for="min">Minimum score</label><input type="number" id="min" min="0" max="18" value="12">
+      <button class="act" id="propose">Propose introductions</button><span class="msg" id="introMsg" role="status"></span>
+    </div>
+    <div id="introList"></div>
+  </section>
+</div>
+
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+let key = "", config = null, data = { leads: [], intros: [], unreadLetters: 0 }, filter = "unreviewed", stopping = false;
+try { key = sessionStorage.getItem("scout-key") || ""; } catch (e) {}
+
+async function api(action, body) {
+  const r = await fetch("/api/scout", { method: "POST", headers: { "Content-Type": "application/json", "x-scout-key": key }, body: JSON.stringify({ action, ...body }) });
+  let j = {}; try { j = await r.json(); } catch (e) {}
+  if (!r.ok) throw Object.assign(new Error(j.error || (r.status === 504 ? "That run took too long and was cut off." : "Request failed (" + r.status + ").")), { status: r.status });
+  return j;
+}
+
+// ---- gate
+async function open() {
+  try {
+    config = await api("config");
+    try { sessionStorage.setItem("scout-key", key); } catch (e) {}
+    $("gate").hidden = true; $("app").hidden = false;
+    buildSearch(); await refresh();
+  } catch (err) {
+    key = ""; try { sessionStorage.removeItem("scout-key"); } catch (e) {}
+    $("app").hidden = true; $("gate").hidden = false; $("gateMsg").textContent = err.status ? err.message : "Could not reach the server.";
+  }
+}
+$("gate").addEventListener("submit", e => { e.preventDefault(); key = $("pw").value; $("gateMsg").textContent = "Checking…"; open(); });
+$("lock").addEventListener("click", () => { key = ""; try { sessionStorage.removeItem("scout-key"); } catch (e) {} location.reload(); });
+document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
+  ["queue", "search", "letters", "intros"].forEach(t => $(t).hidden = t !== b.dataset.tab);
+}));
+
+// ---- queue
+async function refresh() {
+  data = await api("leads");
+  renderQueue(); renderIntros();
+  $("lettersMsg").textContent = data.unreadLetters ? data.unreadLetters + " new" : "No new letters.";
+}
+const FILTERS = [["unreviewed", "To review"], ["shortlist", "Shortlist"], ["passed", "Passed"], ["relays", "Relays"], ["all", "Everything"]];
+function shown() {
+  return data.leads.filter(l => filter === "all" ? true : filter === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === filter)
+    .sort((a, b) => b.total - a.total || (b.found || "").localeCompare(a.found || ""));
+}
+function renderQueue() {
+  const bar = $("filters"); bar.textContent = "";
+  FILTERS.forEach(([id, name]) => {
+    const n = data.leads.filter(l => id === "all" ? true : id === "relays" ? l.kind === "intermediary" : l.kind === "person" && l.status === id).length;
+    const b = el("button", "quiet", name + " " + n); b.setAttribute("aria-pressed", filter === id);
+    b.addEventListener("click", () => { filter = id; renderQueue(); }); bar.append(b);
+  });
+  const box = $("leads"); box.textContent = "";
+  const list = shown();
+  if (!list.length) { box.append(el("p", "empty", data.leads.length ? "Nothing in this view." : "The queue is empty. Run a search, or read new letters from the website, and the people found will appear here.")); return; }
+  list.forEach(l => box.append(card(l)));
+}
+function card(l) {
+  const c = el("article", "lead");
+  const s = el("div", "score", l.kind === "person" ? String(l.total) : "–"); s.append(el("small", "", l.kind === "person" ? "of 18" : "relay")); c.append(s);
+  const b = el("div");
+  b.append(el("h3", "", l.name || "Unnamed"));
+  b.append(el("p", "who", [l.role, l.place, l.country !== l.place ? l.country : "", l.origin === "inbound" ? "wrote to us" : l.lane].filter(Boolean).join(" · ")));
+  b.append(el("p", "", l.story));
+  if (l.in_their_words) b.append(el("p", "quote", "“" + l.in_their_words + "”"));
+  if (l.cautions) b.append(el("p", "check", "Check first: " + l.cautions));
+  if (l.kind === "person" && l.scores) { const t = el("div", "traits"); Object.entries(l.scores).forEach(([k, v]) => t.append(el("span", "", k + " " + v))); b.append(t); }
+  if (l.contact) b.append(el("p", "who", "Reach them: " + l.contact));
+  if (l.letter) { const d = el("details"); d.append(el("summary", "", "Their letter"), el("pre", "", l.letter)); b.append(d); }
+  const links = (l.sources || []).filter(u => /^https?:\/\//i.test(u));
+  if (links.length) { const k = el("div", "links"); links.forEach(u => { const a = el("a", "", u); a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer"; k.append(a); }); b.append(k); }
+  if (l.kind === "person") {
+    const acts = el("div", "acts");
+    [["shortlist", "Shortlist"], ["passed", "Pass"], ["unreviewed", "Back to review"]].filter(([st]) => st !== l.status).forEach(([st, name]) => {
+      const x = el("button", "quiet", name);
+      x.addEventListener("click", async () => { x.disabled = true; try { await api("mark", { id: l.id, status: st }); l.status = st; renderQueue(); } catch (err) { x.disabled = false; x.textContent = err.message; } });
+      acts.append(x);
+    });
+    b.append(acts);
+  }
+  c.append(b); return c;
+}
+
+// ---- search
+function buildSearch() {
+  const cs = $("countries"); cs.textContent = "";
+  config.regions.forEach(r => {
+    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = r.country; box.id = "c-" + r.country.replace(/\W/g, "");
+    const t = el("span", "", r.country + " "); if (r.relaysOnly) t.append(el("small", "", "relays only"));
+    lab.append(box, t); cs.append(lab);
+  });
+  const ls = $("lanes"); ls.textContent = "";
+  Object.entries(config.lanes).forEach(([id, text]) => {
+    const lab = el("label"), box = el("input"); box.type = "checkbox"; box.value = id; box.checked = true; box.id = "l-" + id;
+    const t = el("span"); t.append(el("b", "", id.replace("-", " ") + ". "), text); lab.append(box, t); ls.append(lab);
+  });
+  $("search").addEventListener("change", showPlan); showPlan();
+}
+function plan() {
+  const lanes = [...$("lanes").querySelectorAll("input:checked")].map(i => i.value), out = [];
+  [...$("countries").querySelectorAll("input:checked")].forEach(i => {
+    const r = config.regions.find(x => x.country === i.value);
+    r.languages.forEach(language => (r.relaysOnly ? ["intermediaries"] : lanes).forEach(lane => out.push({ country: r.country, language, lane })));
+  });
+  return out;
+}
+function showPlan() { const n = plan().length; $("plan").textContent = n ? n + (n === 1 ? " run" : " runs") + ", a few minutes each" : "Choose at least one country."; $("go").disabled = !n; }
+$("none").addEventListener("click", () => { $("countries").querySelectorAll("input").forEach(i => i.checked = false); showPlan(); });
+$("stop").addEventListener("click", () => { stopping = true; $("stop").textContent = "Stopping…"; });
+$("go").addEventListener("click", async () => {
+  const runs = plan(), log = $("log"); let total = 0;
+  stopping = false; $("go").disabled = true; $("stop").hidden = false; $("stop").textContent = "Stop after this run"; log.hidden = false; log.textContent = "";
+  for (let i = 0; i < runs.length && !stopping; i++) {
+    const r = runs[i], line = el("div", "", (i + 1) + "/" + runs.length + "  " + r.country + " · " + r.language + " · " + r.lane + "  …"); log.append(line);
+    try { const out = await api("run", r); total += out.added; line.textContent = line.textContent.replace("…", out.found + " found, " + out.added + " new"); }
+    catch (err) { line.textContent = line.textContent.replace("…", "failed: " + err.message); if (err.status === 401 || err.status === 503) break; }
+  }
+  log.append(el("div", "", (stopping ? "Stopped. " : "Done. ") + total + " added to the queue."));
+  $("stop").hidden = true; showPlan(); refresh().catch(() => {});
+});
+
+// ---- letters
+$("read").addEventListener("click", async () => {
+  const b = $("read"), m = $("lettersMsg"); b.disabled = true; let n = 0;
+  try {
+    for (;;) { m.textContent = "Reading… " + n + " done"; const out = await api("intake"); n += out.processed; if (!out.processed || !out.remaining) break; }
+    m.textContent = n ? n + " added to the queue." : "No new letters."; await refresh(); if (n) m.textContent = n + " added to the queue.";
+  } catch (err) { m.textContent = (n ? n + " added, then: " : "") + err.message; }
+  b.disabled = false;
+});
+
+// ---- introductions
+function renderIntros() {
+  const box = $("introList"); box.textContent = "";
+  if (!data.intros.length) { box.append(el("p", "empty", "No introductions proposed yet.")); return; }
+  [...data.intros].sort((a, b) => (b.proposed || "").localeCompare(a.proposed || "")).forEach(i => {
+    const c = el("article", "intro"); c.append(el("h3", "", i.a + "  ↔  " + i.b), el("p", "", i.why), el("p", "q", i.first_question)); box.append(c);
+  });
+}
+$("propose").addEventListener("click", async () => {
+  const b = $("propose"), m = $("introMsg"); b.disabled = true; m.textContent = "Thinking…";
+  try { const out = await api("match", { min: Number($("min").value) || 0 }); m.textContent = out.people < 2 ? "Not enough people at that score yet (" + out.people + ")." : out.added + " new."; await refresh(); }
+  catch (err) { m.textContent = err.message; }
+  b.disabled = false;
+});
+
+if (key) open(); else $("gate").hidden = false;
+</script>
+</body>
+</html>

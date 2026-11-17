@@ -1,0 +1,276 @@
+// The private scout: searches for people, reads website letters, proposes
+// introductions, and keeps the review queue. Everything is behind SCOUT_PASSWORD
+// and stored in the same private Blob store as the letters.
+import Anthropic from '@anthropic-ai/sdk';
+import { put, get, list } from '@vercel/blob';
+import { createHash, timingSafeEqual } from 'node:crypto';
+import { ARCHETYPE, RUBRIC, LANES, HIGH_RISK, REGIONS } from '../lib/brief.js';
+
+const MODEL = 'claude-opus-5-5';
+const TRAITS = Object.keys(RUBRIC);
+const BUDGET_MS = 240_000; // stop starting new model work after this; the function limit is 300s
+
+// ---------- storage -----------------------------------------------------------
+
+const hash = (s) => createHash('sha1').update(s).digest('hex').slice(0, 20);
+
+async function readJson(pathname) {
+  const r = await get(pathname, { access: 'private' });
+  if (!r || r.statusCode !== 200) return null;
+  return JSON.parse(await new Response(r.stream).text());
+}
+async function writeJson(pathname, data) {
+  await put(pathname, JSON.stringify(data, null, 2), {
+    access: 'private', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: true,
+  });
+}
+async function listAll(prefix) {
+  const out = [];
+  let cursor;
+  do {
+    const page = await list({ prefix, cursor, limit: 1000 });
+    out.push(...page.blobs);
+    cursor = page.hasMore ? page.cursor : undefined;
+  } while (cursor);
+  return out;
+}
+async function readAll(prefix) {
+  const blobs = await listAll(prefix);
+  const docs = await Promise.all(blobs.map((b) => readJson(b.pathname).catch(() => null)));
+  return docs.filter(Boolean);
+}
+
+// ---------- model -------------------------------------------------------------
+
+const client = () => new Anthropic();
+const textOf = (msg) => msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+
+async function research(system, prompt, searches, deadline) {
+  let messages = [{ role: 'user', content: prompt }];
+  for (let i = 0; i < 4; i++) {
+    const reply = await client().beta.messages.stream({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'medium' },
+      system,
+      tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: searches }],
+      messages,
+    }).finalMessage();
+    if (reply.stop_reason === 'refusal') return '';
+    if (reply.stop_reason !== 'pause_turn' || Date.now() > deadline) return textOf(reply);
+    messages = [messages[0], { role: 'assistant', content: reply.content }];
+  }
+  return '';
+}
+
+async function structure(system, content, schema) {
+  const reply = await client().messages.create({
+    model: MODEL,
+    max_tokens: 16000,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema } },
+    system,
+    messages: [{ role: 'user', content }],
+  });
+  if (reply.stop_reason !== 'end_turn') return null;
+  try { return JSON.parse(textOf(reply)); } catch { return null; }
+}
+
+const obj = (properties) => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
+const str = (description) => ({ type: 'string', description });
+const LEAD = obj({
+  name: str('Public name or handle exactly as they publish it'),
+  place: str('Town or region'),
+  role: str("Their job or role, e.g. 'school events coordinator'"),
+  story: str('Two or three sentences in English: what they are inside of, and what is changing'),
+  in_their_words: str('A short quotation in the original language, or empty'),
+  sources: { type: 'array', items: { type: 'string' }, description: 'Public URLs the claims come from' },
+  scores: obj(Object.fromEntries(TRAITS.map((t) => [t, { type: 'integer', description: `0-3. ${RUBRIC[t]}` }]))),
+  themes: { type: 'array', items: { type: 'string' }, description: "3-6 lowercase tags, e.g. 'school', 'mining town'" },
+  cautions: str('Anything a human should check before any contact: safety, minors, consent, doubt about facts'),
+});
+const LEADS = obj({ leads: { type: 'array', items: LEAD } });
+const INTROS = obj({
+  introductions: {
+    type: 'array',
+    items: obj({
+      a: str('First name, exactly as given'),
+      b: str('Second name, exactly as given'),
+      why: str('What these two would recognise in each other'),
+      first_question: str('One question to open their first conversation'),
+    }),
+  },
+});
+
+const RUBRIC_TEXT = TRAITS.map((t) => `- ${t}: ${RUBRIC[t]}`).join('\n');
+
+const SCOUT_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people who have a story only they can tell and want to tell it, before the film world has found them.
+
+${ARCHETYPE}
+
+Rules
+- Search in the language you are given, using the words a local would use. Do not search in English unless English is the language given.
+- Only people who have already chosen to publish under their own name or handle. Never infer identities, never combine sources to unmask anyone, never collect contact details, addresses, family members or employers beyond what the person states publicly.
+- No minors.
+- Skip anyone already covered by national or international press, and anyone with an established film or media career. Everyday video experience is fine.
+- Prefer three real finds to ten weak ones. If you find nobody, say so.
+- For each find give: public name, place, role, what they are inside of, what is changing, one short quotation in the original language, the URLs, and what a human should check before contact.`;
+
+const RELAY_SYSTEM = `You are a scout for Nobody International, a documentary initiative that looks for people with a story only they can tell.
+
+In this country, being identified as someone with a critical story to tell can cost a person their job, their freedom or their family's safety. So here you do NOT look for individuals and you name no private person.
+
+Instead, find the trusted public intermediaries through whom an open call for stories could travel, so that people can choose to come to us: independent and exile media in the language, diaspora associations, teacher, medical and labour networks abroad, university departments, legal aid and press-freedom groups, community media trainers, film schools in exile. For each give: name, where it is based, who it reaches inside the country, why people trust it, the URL. Search in the language given.`;
+
+function finish(lead, extra) {
+  const scores = Object.fromEntries(TRAITS.map((t) => [t, Math.max(0, Math.min(3, Number(lead.scores?.[t]) || 0))]));
+  return {
+    ...lead, scores,
+    total: TRAITS.reduce((n, t) => n + scores[t], 0),
+    found: new Date().toISOString().slice(0, 10),
+    status: 'unreviewed',
+    ...extra,
+  };
+}
+
+// ---------- actions -----------------------------------------------------------
+
+async function run({ country, language, lane, searches = 6 }) {
+  const region = REGIONS.find(([c]) => c === country);
+  if (!region || !region[1].includes(language)) throw fail(400, 'Unknown country or language.');
+  const risky = HIGH_RISK.has(country);
+  if (!risky && !LANES[lane]) throw fail(400, 'Unknown lane.');
+  const deadline = Date.now() + BUDGET_MS;
+  const prompt = `Country: ${country}. Language to search in: ${language}.` +
+    (risky ? '' : `\nWhere to look this time: ${LANES[lane]}`);
+  const notes = await research(risky ? RELAY_SYSTEM : SCOUT_SYSTEM, prompt, Math.max(1, Math.min(10, searches)), deadline);
+  if (!notes.trim()) return { found: 0, added: 0 };
+  const parsed = await structure(
+    'Convert these scouting notes into records. Invent nothing: leave a field empty rather than guess. Score each record 0-3 on:\n' +
+      RUBRIC_TEXT + (risky ? '\nThese are organisations: set every score to 0.' : ''),
+    notes, LEADS);
+  const existing = new Set((await listAll('scout/leads/')).map((b) => b.pathname));
+  let added = 0;
+  for (const raw of parsed?.leads || []) {
+    if (!raw.name) continue;
+    const id = hash(`${raw.name.toLowerCase()}|${country}`);
+    const pathname = `scout/leads/${id}.json`;
+    if (existing.has(pathname)) continue;
+    await writeJson(pathname, finish(raw, {
+      id, kind: risky ? 'intermediary' : 'person', country, language,
+      lane: risky ? 'intermediaries' : lane, origin: 'scout',
+    }));
+    added++;
+  }
+  return { found: parsed?.leads?.length || 0, added };
+}
+
+async function intake() {
+  const deadline = Date.now() + BUDGET_MS;
+  const [letters, leads] = await Promise.all([listAll('letters/'), listAll('scout/leads/')]);
+  const done = new Set(leads.map((b) => b.pathname));
+  const pending = letters.filter((b) => !done.has(`scout/leads/${hash(b.pathname)}.json`));
+  let processed = 0;
+  for (const blob of pending) {
+    if (processed >= 4 || Date.now() > deadline) break;
+    const letter = await readJson(blob.pathname);
+    if (!letter) continue;
+    const parsed = await structure(
+      `A person wrote to Nobody International, in any language.\n\n${ARCHETYPE}\n\nProduce exactly one record from their message. Write 'story' in English, keep 'in_their_words' in their language, leave 'sources' empty. Use only what they wrote. If they are a filmmaker, funder or someone recommending another person rather than a person with their own story, say so in 'role' and 'story' and set every score to 0. Score 0-3 on:\n${RUBRIC_TEXT}`,
+      JSON.stringify(letter), LEADS);
+    const raw = parsed?.leads?.[0] || {
+      name: letter.name, place: letter.location, role: letter.role, story: 'Could not be read automatically. Open the letter.',
+      in_their_words: '', sources: [], scores: {}, themes: [], cautions: 'Not scored.',
+    };
+    const id = hash(blob.pathname);
+    await writeJson(`scout/leads/${id}.json`, finish(raw, {
+      id, kind: 'person', country: letter.location || '', language: '', lane: 'open-call', origin: 'inbound',
+      name: letter.name || raw.name, contact: letter.contact || '', wrote_as: letter.role || '',
+      letter: letter.letter || '', received: letter.received || '',
+    }));
+    processed++;
+  }
+  return { processed, remaining: pending.length - processed };
+}
+
+async function match({ min = 12 }) {
+  const leads = await readAll('scout/leads/');
+  const people = leads
+    .filter((l) => l.kind === 'person' && l.total >= min && l.status !== 'passed')
+    .map(({ name, country, role, story, themes }) => ({ name, country, role, story, themes }));
+  if (people.length < 2) return { proposed: 0, added: 0, people: people.length };
+  const parsed = await structure(
+    'These people each have a story and do not know each other. Propose introductions between pairs in DIFFERENT countries who would recognise something in each other: the same kind of institution, the same turn, or two halves of one story. Quality over coverage; an obvious topical overlap is not enough. Use names exactly as given.',
+    JSON.stringify(people), INTROS);
+  const existing = new Set((await listAll('scout/intros/')).map((b) => b.pathname));
+  let added = 0;
+  for (const intro of parsed?.introductions || []) {
+    const id = hash([intro.a, intro.b].sort().join('|'));
+    const pathname = `scout/intros/${id}.json`;
+    if (existing.has(pathname)) continue;
+    await writeJson(pathname, { ...intro, id, proposed: new Date().toISOString().slice(0, 10) });
+    added++;
+  }
+  return { proposed: parsed?.introductions?.length || 0, added, people: people.length };
+}
+
+async function mark({ id, status }) {
+  if (!/^[0-9a-f]{20}$/.test(id || '') || !['unreviewed', 'shortlist', 'passed'].includes(status)) throw fail(400, 'Bad request.');
+  const pathname = `scout/leads/${id}.json`;
+  const lead = await readJson(pathname);
+  if (!lead) throw fail(404, 'No such lead.');
+  await writeJson(pathname, { ...lead, status });
+  return { ok: true };
+}
+
+const ACTIONS = {
+  config: async () => ({
+    regions: REGIONS.map(([country, languages]) => ({ country, languages, relaysOnly: HIGH_RISK.has(country) })),
+    lanes: LANES, rubric: RUBRIC,
+  }),
+  leads: async () => {
+    const [leads, intros, letters] = await Promise.all([readAll('scout/leads/'), readAll('scout/intros/'), listAll('letters/')]);
+    const read = new Set(leads.filter((l) => l.origin === 'inbound').map((l) => l.id));
+    return { leads, intros, unreadLetters: letters.filter((b) => !read.has(hash(b.pathname))).length };
+  },
+  run, intake, match, mark,
+};
+
+// ---------- entry -------------------------------------------------------------
+
+function fail(status, message) { return Object.assign(new Error(message), { status }); }
+
+function allowed(given) {
+  const want = process.env.SCOUT_PASSWORD || '';
+  const a = createHash('sha256').update(String(given || '')).digest();
+  const b = createHash('sha256').update(want).digest();
+  return want.length >= 8 && timingSafeEqual(a, b);
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'POST only' }); }
+  if (!process.env.SCOUT_PASSWORD || process.env.SCOUT_PASSWORD.length < 8) {
+    return res.status(503).json({ error: 'Not set up yet: add SCOUT_PASSWORD (8 characters or more) in the Vercel project settings, then redeploy.' });
+  }
+  if (!allowed(req.headers['x-scout-key'])) return res.status(401).json({ error: 'Wrong password.' });
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const action = ACTIONS[body.action];
+  if (!action) return res.status(400).json({ error: 'Unknown action.' });
+  if (['run', 'intake', 'match'].includes(body.action) && !process.env.ANTHROPIC_API_KEY) {
+    return res.status(503).json({ error: 'Not set up yet: add ANTHROPIC_API_KEY in the Vercel project settings, then redeploy.' });
+  }
+  try {
+    return res.status(200).json(await action(body));
+  } catch (err) {
+    if (err.status && err.status < 500 && !(err instanceof Anthropic.APIError)) return res.status(err.status).json({ error: err.message });
+    console.error(body.action, err);
+    const hint = err instanceof Anthropic.AuthenticationError ? 'The Anthropic API key was rejected.'
+      : err instanceof Anthropic.RateLimitError ? 'Anthropic rate limit reached. Wait a minute and try again.'
+      : err instanceof Anthropic.APIError ? `Anthropic API error ${err.status ?? ''}: ${err.message}`
+      : 'Something failed on the server. The details are in the Vercel logs.';
+    return res.status(502).json({ error: hint });
+  }
+}
